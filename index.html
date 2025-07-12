@@ -1,0 +1,88 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Painel de Precificação e Comparador</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background-color: #4a90e2;
+      color: white;
+      padding: 20px;
+      text-align: center;
+    }
+    nav {
+      background: #f3f4f6;
+      padding: 10px;
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      border-bottom: 1px solid #ddd;
+    }
+    nav button {
+      padding: 10px 20px;
+      font-weight: bold;
+      cursor: pointer;
+      background: #4a90e2;
+      color: white;
+      border: none;
+      border-radius: 5px;
+    }
+    nav button:hover {
+      background-color: #357ab8;
+    }
+    .aba {
+      display: none;
+      padding: 20px;
+      max-width: 1200px;
+      margin: auto;
+    }
+    .aba.ativa {
+      display: block;
+    }
+    iframe {
+      width: 100%;
+      height: 90vh;
+      border: none;
+    }
+  </style>
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-512.png">
+  <meta name="theme-color" content="#4a90e2">
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js');
+    }
+  </script>
+</head>
+<body>
+  <header>
+    <h1>Painel de Precificação e Comparador</h1>
+  </header>
+
+  <nav>
+    <button onclick="mostrarAba('precificacao')">📦 Custo de Produção</button>
+    <button onclick="mostrarAba('comparador')">📈 Comparador Shopee x Mercado Livre</button>
+  </nav>
+
+  <div id="precificacao" class="aba ativa">
+    <iframe src="SISTEMA_PRECIFICACAO.html"></iframe>
+  </div>
+
+  <div id="comparador" class="aba">
+    <iframe src="COMPARADOR_LUCRO.html"></iframe>
+  </div>
+
+  <script>
+    function mostrarAba(id) {
+      document.querySelectorAll('.aba').forEach(aba => aba.classList.remove('ativa'));
+      document.getElementById(id).classList.add('ativa');
+    }
+  </script>
+</body>
+</html>

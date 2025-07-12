@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Comparador de Lucro - Shopee x Mercado Livre</title>
+  <style>
+body.dark {
+  background-color: #121212;
+  color: #f5f5f5;
+}
+
+body.dark .section {
+  background: #1e1e1e;
+  box-shadow: 0 2px 6px rgba(255, 255, 255, 0.05);
+}
+
+body.dark input,
+body.dark select {
+  background-color: #2a2a2a;
+  color: #f5f5f5;
+  border-color: #555;
+}
+
+body.dark label {
+  color: #e0e0e0;
+}
+
+body.dark th {
+  background-color: #2c2c2c;
+  color: #f5f5f5;
+}
+
+body.dark td {
+  background-color: #1a1a1a;
+  color: #f5f5f5;
+}
+
+body.dark .botao-verde {
+  background-color: #2ecc71;
+}
+
+body.dark .botao-verde:hover {
+  background-color: #27ae60;
+}
+
+    body { font-family: 'Segoe UI', sans-serif; background-color: #f9fafb; margin: 0; padding: 0; color: #333; }
+    header { background-color: #4a90e2; color: white; text-align: center; padding: 20px; }
+    main { padding: 20px; max-width: 1000px; margin: auto; }
+    nav { text-align: center; margin-bottom: 20px; }
+    nav button {
+      background-color: #4a90e2; color: white; border: none; padding: 10px 20px;
+      margin: 5px; border-radius: 6px; cursor: pointer; transition: background-color 0.3s;
+    }
+    nav button:hover { background-color: #357ab8; }
+    h2, h3 { color: #222; margin-top: 30px; }
+    .aba { display: none; }
+    .ativa { display: block; }
+    .section {
+      background: white; border-radius: 8px; padding: 20px; margin-bottom: 20px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+    }
+    label { display: block; margin-top: 15px; font-weight: 500; }
+    input, select {
+      width: 100%; padding: 10px; margin-top: 5px;
+      border: 1px solid #ccc; border-radius: 6px;
+    }
+    .botao-verde {
+      margin-top: 20px; background-color: #28a745; color: white;
+      border: none; padding: 12px 18px; border-radius: 6px; cursor: pointer;
+    }
+    .botao-verde:hover { background-color: #218838; }
+/* Suavidade nas abas */
+.aba {
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.aba.ativa {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Fade suave para novos cards */
+.fade-card {
+  animation: fadeInScale 0.4s ease-out;
+}
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Feedback nos botões */
+button:active {
+  transform: scale(0.97);
+  transition: transform 0.1s ease;
+}
+body.modo-apresentacao button:not(#botaoModoApresentacao),
+body.modo-apresentacao input,
+body.modo-apresentacao label,
+body.modo-apresentacao .botoes-config {
+  display: none !important;
+}
+
+body.modo-apresentacao .fade-card {
+  box-shadow: 0 0 0 1px #ccc;
+  border-radius: 6px;
+  padding: 10px;
+  background: #fff;
+  max-width: 800px;
+  margin: 0 auto 30px auto;
+}
+
+  </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+</head>
+
+<body>
+  <header>
+    <h1>Comparador de Lucro: Shopee x Mercado Livre</h1>
+  </header>
+  <main>
+    <nav>
+<button onclick="alternarModoEscuro()" id="toggleDark" style="
+    background: none; border: 2px solid white; color: white; padding: 6px 10px;
+    font-size: 16px; border-radius: 6px; cursor: pointer;
+  ">🌙</button>
+      <button onclick="mostrarAba('formulario')">Formulário</button>
+<button onclick="mostrarAba('resultados')">Resultados</button>
+<button onclick="mostrarAba('custos')">Custos Variáveis</button>
+<button onclick="mostrarAba('abaDecisao')">🧭 Decisão</button>
+
+
+    </nav>
+
+    <div id="formulario" class="aba ativa">
+      <h2>Formulário de Cálculo</h2>
+      <div class="section">
+        <label>Produto:<input type="text" id="produto" /></label>
+        <label>Preço de Venda (R$):<input type="number" id="precoVenda" /></label>
+        <label>Custo do Produto (R$):<input type="number" id="custoProduto" /></label>
+
+        <h3>Mercado Livre</h3>
+        <label>Taxas da Plataforma (%):
+          <select id="mlTaxa" onchange="ajustarTransacaoML()">
+            <option value="11">11% (Clássico)</option>
+            <option value="16">16% (Premium)</option>
+            <option value="0">0% (Isento)</option>
+          </select>
+        </label>
+        <label>Custo Fixo Plataforma (R$):<input type="number" id="mlFixo" value="6" readonly /></label>
+        <label>Frete (R$):<input type="number" id="mlFrete" /></label>
+        <label>Taxa de Transação (%):<input type="number" id="mlTransacao" /></label>
+        <label>Taxa de Transferência (%):<input type="number" id="mlTransferencia" /></label>
+        <label>Taxa de Antecipação (%):<input type="number" id="mlAntecipacao" /></label>
+        <label>Custos Variáveis (R$):<input type="number" id="mlVariavel" /></label>
+        <label>Imposto (%):<input type="number" id="mlImposto" /></label>
+        <label>Comissão do Vendedor (%):<input type="number" id="mlComissao" /></label>
+
+        <h3>Shopee</h3>
+        <label>Taxas da Plataforma (%):
+          <select id="shTaxa">
+            <option value="14">14% (Padrão)</option>
+            <option value="20">20% (Com frete grátis)</option>
+            <option value="0">0% (Isento)</option>
+          </select>
+        </label>
+        <label>Custo Fixo Plataforma (R$):<input type="number" id="shFixo" value="4" readonly /></label>
+        <label>Frete (R$):<input type="number" id="shFrete" /></label>
+        <label>Taxa de Transação (%):<input type="number" id="shTransacao" /></label>
+        <label>Taxa de Transferência (%):<input type="number" id="shTransferencia" /></label>
+        <label>Taxa de Antecipação (%):<input type="number" id="shAntecipacao" /></label>
+        <label>Custos Variáveis (R$):<input type="number" id="shVariavel" /></label>
+        <label>Imposto (%):<input type="number" id="shImposto" /></label>
+        <label>Comissão do Vendedor (%):<input type="number" id="shComissao" /></label>
+
+        <button class="botao-verde" onclick="calcularERegistrar()">Calcular e Registrar</button>
+      </div>
+    </div>
+
+    <div id="resultados" class="aba">
+  <h2>Resultados</h2>
+<button onclick="alternarModoApresentacao()" id="botaoModoApresentacao" style="margin-bottom: 15px;">
+  🎥 Ativar Modo Apresentação
+</button>
+<canvas id="graficoLucro" height="120" style="margin: 40px auto; max-width: 600px;"></canvas>
+
+  <!-- ⬇️ BLOCO DE META DE MARGEM -->
+  <div style="margin-bottom: 15px;">
+    <label>Meta mínima de margem (%):
+      <input type="number" id="metaMargem" value="20" style="width: 60px;" />
+    </label>
+    <button class="botao-verde" onclick="salvarMetaMargem()">Salvar Meta</button>
+  </div>
+
+  <!-- ⬇️ AQUI OS CARDS SÃO INSERIDOS -->
+  <div id="cardsResultados"></div>
+</div>
+
+
+    <div id="custos" class="aba">
+  <h2>Cálculo de Custo Variável por Unidade</h2>
+  <div class="section" style="display: flex; flex-wrap: wrap; gap: 30px;">
+    
+    <!-- Shopee -->
+    <div style="flex: 1; min-width: 300px;">
+      <h3 style="margin-bottom: 10px;">Shopee</h3>
+      <label>Funcionários (R$):<input type="number" id="cv_sh_funcionarios" value="0" /></label>
+      <label>ERP (Bling, Tiny etc.) (R$):<input type="number" id="cv_sh_erp" value="0" /></label>
+      <label>Hubs de Integração (R$):<input type="number" id="cv_sh_hubs" value="0" /></label>
+      <label>Softwares de Automação (R$):<input type="number" id="cv_sh_automacao" value="0" /></label>
+      <label>Ferramentas de Edição de Imagem (R$):<input type="number" id="cv_sh_edicao" value="0" /></label>
+      <label>Compra de Imagens (R$):<input type="number" id="cv_sh_imagens" value="0" /></label>
+      <label>Custos Bancários Variáveis (R$):<input type="number" id="cv_sh_bancarios" value="0" /></label>
+      <label>Gastos Administrativos (R$):<input type="number" id="cv_sh_admin" value="0" /></label>
+      <label>Quantidade Média de Vendas Mensais:<input type="number" id="cv_sh_vendas" value="100" /></label>
+      <button class="botao-verde" onclick="calcularCustoVariavelShopee()">Calcular e Inserir</button>
+      <p id="resultadoShopee" style="margin-top: 10px;"></p>
+    </div>
+
+    <!-- Mercado Livre -->
+    <div style="flex: 1; min-width: 300px;">
+      <h3 style="margin-bottom: 10px;">Mercado Livre</h3>
+      <label>Funcionários (R$):<input type="number" id="cv_ml_funcionarios" value="0" /></label>
+      <label>ERP (Bling, Tiny etc.) (R$):<input type="number" id="cv_ml_erp" value="0" /></label>
+      <label>Hubs de Integração (R$):<input type="number" id="cv_ml_hubs" value="0" /></label>
+      <label>Softwares de Automação (R$):<input type="number" id="cv_ml_automacao" value="0" /></label>
+      <label>Ferramentas de Edição de Imagem (R$):<input type="number" id="cv_ml_edicao" value="0" /></label>
+      <label>Compra de Imagens (R$):<input type="number" id="cv_ml_imagens" value="0" /></label>
+      <label>Custos Bancários Variáveis (R$):<input type="number" id="cv_ml_bancarios" value="0" /></label>
+      <label>Gastos Administrativos (R$):<input type="number" id="cv_ml_admin" value="0" /></label>
+      <label>Quantidade Média de Vendas Mensais:<input type="number" id="cv_ml_vendas" value="100" /></label>
+<label>Nome do Produto:
+  <input type="text" id="produto" placeholder="Ex: T6 - Cilindros + Arco" required />
+</label>
+      <button class="botao-verde" onclick="calcularCustoVariavelML()">Calcular e Inserir</button>
+      <p id="resultadoML" style="margin-top: 10px;"></p>
+    </div>
+
+  </div>
+</div>
+<div id="abaDecisao" class="aba">
+  <h2>🧭 Checklist de Decisão — Shopee ou Mercado Livre?</h2>
+  <p>Marque os itens que se aplicam ao seu produto. O sistema indicará a plataforma mais vantajosa.</p>
+
+  <form id="checklistDecisao">
+  <br>
+  <button onclick="calcularDecisao()" type="button" class="botao-verde">📊 Calcular Melhor Plataforma</button>
+  <div id="resultadoDecisao" style="margin-top: 20px; font-size: 18px; font-weight: bold;"></div>
+
+  <div><strong>Produto:</strong></div>
+  <label><input type="checkbox" name="item1_sh" value="shopee"> Shopee — Produto de baixo valor ou kit simples</label><br>
+  <label><input type="checkbox" name="item1_ml" value="ml"> Mercado Livre — Produto de alto valor e marca forte</label><br>
+
+  <div><strong>Concorrência:</strong></div>
+  <label><input type="checkbox" name="item2_sh" value="shopee"> Concorrência menor na Shopee</label><br>
+  <label><input type="checkbox" name="item2_ml" value="ml"> Concorrência menor no Mercado Livre</label><br>
+
+  <div><strong>Reputação:</strong></div>
+  <label><input type="checkbox" name="item3_sh" value="shopee"> Loja com mais avaliações na Shopee</label><br>
+  <label><input type="checkbox" name="item3_ml" value="ml"> Loja com reputação alta no Mercado Livre</label><br>
+
+  <div><strong>Entrega:</strong></div>
+  <label><input type="checkbox" name="item4_sh" value="shopee"> Envio mais simples na Shopee</label><br>
+  <label><input type="checkbox" name="item4_ml" value="ml"> Entrega mais rápida no Mercado Livre</label><br>
+
+  <div><strong>Conversão:</strong></div>
+  <label><input type="checkbox" name="item5_sh" value="shopee"> Anúncio converte melhor na Shopee</label><br>
+  <label><input type="checkbox" name="item5_ml" value="ml"> Anúncio converte melhor no Mercado Livre</label><br>
+
+  <div><strong>Clientes:</strong></div>
+  <label><input type="checkbox" name="item6_ml" value="ml"> Clientes costumam dar mais problemas na Shopee</label><br>
+
+  <div><strong>Gestão:</strong></div>
+  <label><input type="checkbox" name="item7_ml" value="ml"> Você tem mais tempo para gerenciar no ML</label><br>
+  <label><input type="checkbox" name="item7_sh" value="shopee"> Você prefere simplicidade no dia a dia</label><br>
+</form>
+
+
+
+  <br>
+  <button onclick="calcularDecisao()" class="botao-verde">📊 Calcular Melhor Plataforma</button>
+  <div id="resultadoDecisao" style="margin-top: 20px; font-size: 18px; font-weight: bold;"></div>
+</div>
+
+</main>
+
+  <script>
+    function mostrarAba(id) {
+      document.querySelectorAll('.aba').forEach(a => a.classList.remove('ativa'));
+document.getElementById(id).classList.add('ativa');
+    }
+
+    function ajustarTransacaoML() {
+      const taxa = document.getElementById('mlTaxa').value;
+      if (taxa === '11') {
+        document.getElementById('mlTransacao').value = '1.85';
+      }
+    }
+
+    function calcularERegistrar() {
+  const get = id => parseFloat(document.getElementById(id).value) || 0;
+  const produto = document.getElementById('produto').value;
+  const preco = get('precoVenda');
+  const custo = get('custoProduto');
+
+  function calc(plataforma) {
+    const taxa = get(plataforma + 'Taxa');
+    const fixo = get(plataforma + 'Fixo');
+    const frete = get(plataforma + 'Frete');
+    const transacao = get(plataforma + 'Transacao');
+    const transferencia = get(plataforma + 'Transferencia');
+    const antecipacao = get(plataforma + 'Antecipacao');
+    const variavel = get(plataforma + 'Variavel');
+    const imposto = get(plataforma + 'Imposto');
+    const comissao = get(plataforma + 'Comissao');
+
+    const taxaTotal = preco * ((taxa + transacao + transferencia + antecipacao) / 100);
+    const sobra = preco - taxaTotal - fixo - frete - variavel;
+    const comissaoValor = sobra * (comissao / 100);
+    const impostoValor = preco * (imposto / 100);
+    const lucro = sobra - comissaoValor - impostoValor - custo;
+    const margem = (lucro / preco) * 100;
+
+    return {
+      plataforma: plataforma === 'ml' ? 'Mercado Livre' : 'Shopee',
+      produto,
+      preco: preco.toFixed(2),
+      taxaTotal: taxaTotal.toFixed(2),
+      fixo: fixo.toFixed(2),
+      frete: frete.toFixed(2),
+      transacao: transacao.toFixed(2),
+      transferencia: transferencia.toFixed(2),
+      antecipacao: antecipacao.toFixed(2),
+      variavel: variavel.toFixed(2),
+      sobra: sobra.toFixed(2),
+      comissao: comissaoValor.toFixed(2),
+      imposto: impostoValor.toFixed(2),
+      custo: custo.toFixed(2),
+      lucro: lucro.toFixed(2),
+      margem: margem.toFixed(2)
+    };
+  }
+
+  const ml = calc('ml');
+  const sh = calc('sh');
+
+  // Salva no localStorage
+  const registros = JSON.parse(localStorage.getItem('resultadosLucro')) || [];
+  registros.push([ml, sh]);
+  localStorage.setItem('resultadosLucro', JSON.stringify(registros));
+
+  renderizarCards(); // Reexibe todos os cards salvos
+  mostrarAba('resultados');
+}
+function renderizarCards() {
+  const registros = JSON.parse(localStorage.getItem('resultadosLucro')) || [];
+  const container = document.getElementById('cardsResultados');
+  container.innerHTML = '';
+
+  registros.forEach(([ml, sh], index) => {
+    const produtoNome = ml.produto || sh.produto || 'Produto';
+    const lucroML = parseFloat(ml.lucro);
+    const lucroSH = parseFloat(sh.lucro);
+    const seloML = lucroML > lucroSH ? ' <span style="background:#28a745; color:white; padding:2px 6px; border-radius:4px; font-size:11px;">⭐ Melhor opção</span>' : '';
+    const seloSH = lucroSH > lucroML ? ' <span style="background:#28a745; color:white; padding:2px 6px; border-radius:4px; font-size:11px;">⭐ Melhor opção</span>' : '';
+    const alertaML = lucroML < 0 ? '<span style="color:#e74c3c;">Lucro negativo — reveja frete, antecipação ou comissão.</span>' : '';
+    const alertaSH = lucroSH < 0 ? '<span style="color:#e74c3c;">Lucro negativo — reveja frete, antecipação ou comissão.</span>' : '';
+
+    const rows = [
+  ['Preço', `R$${ml.preco}`, `R$${sh.preco}`],
+  ['Taxas', `R$${ml.taxaTotal}`, `R$${sh.taxaTotal}`],
+  ['Custo Fixo', `R$${ml.fixo}`, `R$${sh.fixo}`],
+  ['Frete', `R$${ml.frete}`, `R$${sh.frete}`],
+  ['Antecipação', `${ml.antecipacao}%`, `${sh.antecipacao}%`],
+  ['Transferência', `${ml.transferencia}%`, `${sh.transferencia}%`],
+  ['Custos Variáveis', `R$${ml.variavel}`, `R$${sh.variavel}`],
+  ['Sobra', `R$${ml.sobra}`, `R$${sh.sobra}`],
+  ['Comissão', `R$${ml.comissao}`, `R$${sh.comissao}`],
+  ['Imposto', `R$${ml.imposto}`, `R$${sh.imposto}`],
+  ['Custo Produto', `R$${ml.custo}`, `R$${sh.custo}`],
+  ['Lucro Final',
+    `<strong style="color:${lucroML >= 0 ? '#28a745' : '#cc0000'}">R$${ml.lucro}</strong>${seloML}`,
+    `<strong style="color:${lucroSH >= 0 ? '#28a745' : '#cc0000'}">R$${sh.lucro}</strong>${seloSH}`
+  ],
+  ...(lucroML < 0 || lucroSH < 0 ? [['⚠️ Alerta', alertaML, alertaSH]] : []),
+  (() => {
+  const meta = parseFloat(localStorage.getItem('metaMargem')) || 0;
+  const margemML = parseFloat(ml.margem);
+  const margemSH = parseFloat(sh.margem);
+
+  const statusML = margemML >= meta
+    ? ' <span style="color:#28a745;">✔️ Atingiu</span>'
+    : ' <span style="color:#e74c3c;">❌ Abaixo</span>';
+
+  const statusSH = margemSH >= meta
+    ? ' <span style="color:#28a745;">✔️ Atingiu</span>'
+    : ' <span style="color:#e74c3c;">❌ Abaixo</span>';
+
+  return ['Margem',
+    `${ml.margem}%${statusML}`,
+    `${sh.margem}%${statusSH}`];
+})(),
+
+];
+
+
+    container.innerHTML += `
+      <div class="fade-card" style="position: relative; overflow-x: auto; margin-bottom: 40px;">
+        <div style="position: absolute; top: 10px; right: 10px; display: flex; gap: 10px;">
+          <button onclick="duplicarRegistro(${index})"
+            style="background: #3498db; color: white; border: none; padding: 6px 10px;
+                  border-radius: 4px; cursor: pointer; font-size: 13px;">
+            📋 Duplicar
+          </button>
+          <button onclick="apagarRegistro(${index})"
+            style="background: #e74c3c; color: white; border: none; padding: 6px 10px;
+                  border-radius: 4px; cursor: pointer; font-size: 13px;">
+            🗑 Apagar
+          </button>
+        </div>
+
+        <table style="
+          width: auto;
+          margin: auto;
+          border-collapse: collapse;
+          font-family: 'Segoe UI', sans-serif;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        ">
+          <thead>
+            <tr style="background-color: #ffffff;">
+              <th colspan="3" style="
+                text-align: center;
+                padding: 16px;
+                font-size: 18px;
+                font-weight: 600;
+                color: #333;
+                border-bottom: 2px solid #ccc;
+              ">${produtoNome}</th>
+            </tr>
+            <tr style="background-color: #f3f4f6;">
+              <th style="padding: 10px 16px;"></th>
+              <th style="padding: 10px 16px;">Mercado Livre</th>
+              <th style="padding: 10px 16px;">Shopee</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map(([label, valML, valSH], i) => `
+              <tr style="background-color: ${i % 2 === 0 ? '#ffffff' : '#f9fafb'};">
+                <td style="padding: 8px 12px; text-align: right; font-weight: 500;">${label}</td>
+                <td style="padding: 8px 12px; text-align: right;">${valML}</td>
+                <td style="padding: 8px 12px; text-align: left;">${valSH}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+  });
+}
+
+window.onload = () => {
+  renderizarCards();
+};
+function apagarRegistro(index) {
+  const registros = JSON.parse(localStorage.getItem('resultadosLucro')) || [];
+  registros.splice(index, 1); // Remove o item
+  localStorage.setItem('resultadosLucro', JSON.stringify(registros));
+  renderizarCards(); // Atualiza a tela
+}
+function duplicarRegistro(index) {
+  const registros = JSON.parse(localStorage.getItem('resultadosLucro')) || [];
+  const copia = JSON.parse(JSON.stringify(registros[index])); // duplicação profunda
+  registros.splice(index + 1, 0, copia); // insere logo abaixo
+  localStorage.setItem('resultadosLucro', JSON.stringify(registros));
+  renderizarCards();
+}
+
+function calcularCustoVariavelShopee() {
+  const total =
+    (parseFloat(document.getElementById('cv_sh_funcionarios').value) || 0) +
+    (parseFloat(document.getElementById('cv_sh_erp').value) || 0) +
+    (parseFloat(document.getElementById('cv_sh_hubs').value) || 0) +
+    (parseFloat(document.getElementById('cv_sh_automacao').value) || 0) +
+    (parseFloat(document.getElementById('cv_sh_edicao').value) || 0) +
+    (parseFloat(document.getElementById('cv_sh_imagens').value) || 0) +
+    (parseFloat(document.getElementById('cv_sh_bancarios').value) || 0) +
+    (parseFloat(document.getElementById('cv_sh_admin').value) || 0);
+
+  const vendas = parseFloat(document.getElementById('cv_sh_vendas').value) || 1;
+  const custoUnitario = (total / vendas).toFixed(2);
+
+  document.getElementById('shVariavel').value = custoUnitario;
+  document.getElementById('resultadoShopee').innerText = `Custo por unidade: R$${custoUnitario}`;
+}
+
+function calcularCustoVariavelML() {
+  const total =
+    (parseFloat(document.getElementById('cv_ml_funcionarios').value) || 0) +
+    (parseFloat(document.getElementById('cv_ml_erp').value) || 0) +
+    (parseFloat(document.getElementById('cv_ml_hubs').value) || 0) +
+    (parseFloat(document.getElementById('cv_ml_automacao').value) || 0) +
+    (parseFloat(document.getElementById('cv_ml_edicao').value) || 0) +
+    (parseFloat(document.getElementById('cv_ml_imagens').value) || 0) +
+    (parseFloat(document.getElementById('cv_ml_bancarios').value) || 0) +
+    (parseFloat(document.getElementById('cv_ml_admin').value) || 0);
+
+  const vendas = parseFloat(document.getElementById('cv_ml_vendas').value) || 1;
+  const custoUnitario = (total / vendas).toFixed(2);
+
+  document.getElementById('mlVariavel').value = custoUnitario;
+  document.getElementById('resultadoML').innerText = `Custo por unidade: R$${custoUnitario}`;
+}
+function salvarCustosVariaveis() {
+  const campos = document.querySelectorAll('#custos input');
+  const dados = {};
+  campos.forEach(input => {
+    dados[input.id] = input.value;
+  });
+  localStorage.setItem('custosVariaveis', JSON.stringify(dados));
+}
+function carregarCustosVariaveis() {
+  const dados = JSON.parse(localStorage.getItem('custosVariaveis')) || {};
+  Object.keys(dados).forEach(id => {
+    if (document.getElementById(id)) {
+      document.getElementById(id).value = dados[id];
+    }
+  });
+}
+window.addEventListener('DOMContentLoaded', () => {
+  carregarCustosVariaveis();
+  document.querySelectorAll('#custos input').forEach(input => {
+    input.addEventListener('input', salvarCustosVariaveis);
+  });
+});
+
+function alternarModoEscuro() {
+  const corpo = document.body;
+  corpo.classList.toggle('dark');
+
+  const escuroAtivo = corpo.classList.contains('dark');
+  localStorage.setItem('modoEscuro', escuroAtivo ? 'true' : 'false');
+
+  document.getElementById('toggleDark').innerText = escuroAtivo ? '☀️' : '🌙';
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  const ativo = localStorage.getItem('modoEscuro') === 'true';
+  if (ativo) {
+    document.body.classList.add('dark');
+    document.getElementById('toggleDark').innerText = '☀️';
+  }
+
+  // já existente
+  carregarCustosVariaveis();
+  document.querySelectorAll('#custos input').forEach(input => {
+    input.addEventListener('input', salvarCustosVariaveis);
+  });
+});
+function exportarPDF() {
+  const resultados = document.getElementById('cardsResultados');
+  const opt = {
+    margin: 0.5,
+    filename: 'relatorio-lucros.pdf',
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2 },
+    jsPDF: { unit: 'cm', format: 'a4', orientation: 'portrait' }
+  };
+  html2pdf().set(opt).from(resultados).save();
+}
+function alternarModoApresentacao() {
+  const body = document.body;
+  const botao = document.getElementById('botaoModoApresentacao');
+
+  body.classList.toggle('modo-apresentacao');
+
+  if (body.classList.contains('modo-apresentacao')) {
+    botao.innerText = '❌ Sair do Modo Apresentação';
+  } else {
+    botao.innerText = '🎥 Ativar Modo Apresentação';
+  }
+}
+
+function salvarMetaMargem() {
+  const meta = parseFloat(document.getElementById('metaMargem').value) || 0;
+  localStorage.setItem('metaMargem', meta);
+  renderizarCards(); // atualiza os indicadores
+}
+function calcularDecisao() {
+  const checkboxes = document.querySelectorAll('#checklistDecisao input[type="checkbox"]');
+  let pontosShopee = 0;
+  let pontosML = 0;
+
+  checkboxes.forEach(cb => {
+    if (cb.checked) {
+      if (cb.value === 'shopee') pontosShopee++;
+      if (cb.value === 'ml') pontosML++;
+    }
+  });
+
+  const resultado = document.getElementById('resultadoDecisao');
+  if (pontosShopee > pontosML) {
+    resultado.innerHTML = `✅ Melhor vender na <strong style="color: #EF5DA8;">Shopee</strong> (${pontosShopee} pontos)`;
+  } else if (pontosML > pontosShopee) {
+    resultado.innerHTML = `🔵 Melhor vender no <strong style="color: #0074D9;">Mercado Livre</strong> (${pontosML} pontos)`;
+  } else {
+    resultado.innerHTML = `⚖️ <span style="color: gray;">Empate — Avalie caso a caso ou teste ambas</span>`;
+  }
+}
+
+function carregarMetaMargem() {
+  const meta = parseFloat(localStorage.getItem('metaMargem')) || 0;
+  document.getElementById('metaMargem').value = meta;
+}
+window.onload = () => {
+  carregarMetaMargem();
+  renderizarCards();
+};
+
+function exportarExcel() {
+  const registros = JSON.parse(localStorage.getItem('resultadosLucro')) || [];
+  if (registros.length === 0) return alert("Nenhum cálculo para exportar!");
+
+  const planilha = [];
+  registros.forEach(([ml, sh]) => {
+    planilha.push({
+      Produto: ml.produto,
+      Plataforma: 'Mercado Livre',
+      Preço: ml.preco,
+      Taxas: ml.taxaTotal,
+      Fixo: ml.fixo,
+      Frete: ml.frete,
+      Antecipação: ml.antecipacao,
+      Transferência: ml.transferencia,
+      Variável: ml.variavel,
+      Sobra: ml.sobra,
+      Comissão: ml.comissao,
+      Imposto: ml.imposto,
+      Custo: ml.custo,
+      Lucro: ml.lucro,
+      Margem: ml.margem
+    });
+    planilha.push({
+      Produto: sh.produto,
+      Plataforma: 'Shopee',
+      Preço: sh.preco,
+      Taxas: sh.taxaTotal,
+      Fixo: sh.fixo,
+      Frete: sh.frete,
+      Antecipação: sh.antecipacao,
+      Transferência: sh.transferencia,
+      Variável: sh.variavel,
+      Sobra: sh.sobra,
+      Comissão: sh.comissao,
+      Imposto: sh.imposto,
+      Custo: sh.custo,
+      Lucro: sh.lucro,
+      Margem: sh.margem
+    });
+  });
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.json_to_sheet(planilha);
+  XLSX.utils.book_append_sheet(wb, ws, "Lucros");
+  XLSX.writeFile(wb, "relatorio-lucros.xlsx");
+}
+function desenharGraficoLucro(ml, sh) {
+  const ctx = document.getElementById('graficoLucro').getContext('2d');
+  if (window.graficoLucro) window.graficoLucro.destroy(); // Evita duplicações
+
+  window.graficoLucro = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['Mercado Livre', 'Shopee'],
+      datasets: [{
+        label: 'Lucro Final (R$)',
+        data: [parseFloat(ml.lucro), parseFloat(sh.lucro)],
+        backgroundColor: ['#3498db', '#f39c12']
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        title: {
+          display: true,
+          text: 'Comparativo de Lucro por Plataforma'
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            callback: function(value) {
+              return 'R$ ' + value;
+            }
+          }
+        }
+      }
+    }
+  });
+}
+desenharGraficoLucro(ml, sh);
+
+  </script>
+
+</body>
+</html>
