@@ -6,6 +6,8 @@
   <title>Sistema de Sobras - Shopee</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
   <style>
     body { font-family: sans-serif; padding: 20px; background: #f4f4f4; }
     table { width: 100%; border-collapse: collapse; margin-top: 10px; background: white; }
@@ -60,6 +62,18 @@
 </div>
 
 <script>
+ const firebaseConfig = {
+    apiKey: "AIzaSyDskmCmkvGgnV9I_MkhBgHOsCoU4VarZbw",
+    authDomain: "sobra-shopee.firebaseapp.com",
+    projectId: "sobra-shopee",
+    storageBucket: "sobra-shopee.firebasestorage.app",
+    messagingSenderId: "884927523696",
+    appId: "1:884927523696:web:334f198596e85462d2bdb5"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
   let metas = {};
 
   function trocarAba(id) {
@@ -68,15 +82,21 @@
     document.getElementById(id).classList.add('ativa');
   }
 
-  function salvarMetas() {
-    localStorage.setItem('metasSobra', JSON.stringify(metas));
+ async function salvarMetas() {
+  const metasRef = collection(db, "metasSKU");
+  for (let sku in metas) {
+    await setDoc(doc(metasRef, sku), { valor: metas[sku] });
   }
+}
 
-  function carregarMetas() {
-    const salva = localStorage.getItem('metasSobra');
-    if (salva) metas = JSON.parse(salva);
-    renderizarMetas();
-  }
+  async function carregarMetas() {
+  const querySnapshot = await getDocs(collection(db, "metasSKU"));
+  metas = {};
+  querySnapshot.forEach((doc) => {
+    metas[doc.id] = doc.data().valor;
+  });
+  renderizarMetas();
+}
 
   function renderizarMetas() {
     const tbody = document.querySelector('#tabelaMetas tbody');
@@ -98,18 +118,18 @@
     }
   }
 
-  function adicionarMeta() {
+  async function adicionarMeta() {
     const sku = document.getElementById('metaSku').value.trim();
     const valor = parseFloat(document.getElementById('metaValor').value);
     if (!sku || isNaN(valor)) return;
     metas[sku] = valor;
-    salvarMetas();
+    await salvarMetas();
     renderizarMetas();
     document.getElementById('metaSku').value = '';
     document.getElementById('metaValor').value = '';
   }
 
-  function editarMeta(botao, sku) {
+  async function editarMeta(botao, sku) {
     const tr = botao.closest('tr');
     const span = tr.querySelector('.valorMeta');
     const input = tr.querySelector('.editInput');
@@ -122,19 +142,19 @@
       if (!isNaN(novoValor)) {
       input.style.display = 'none'; span.style.display = 'inline-block';
         metas[sku] = novoValor;
-        salvarMetas();
+        await salvarMetas();
         renderizarMetas();
       }
     }
   }
 
-  function excluirMeta(sku, btn) {
-    if (confirm("Excluir a meta do SKU " + sku + "?")) {
-      delete metas[sku];
-      salvarMetas();
-      btn.closest('tr').remove();
-    }
+ async function excluirMeta(sku, btn) {
+  if (confirm("Excluir a meta do SKU " + sku + "?")) {
+    await deleteDoc(doc(db, "metasSKU", sku));
+    delete metas[sku];
+    renderizarMetas();
   }
+}
 
   function filtrarPorSKU() {
   const filtro = document.getElementById("filtroSKU").value.toLowerCase();
