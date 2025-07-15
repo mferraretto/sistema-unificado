@@ -148,7 +148,6 @@ body.modo-apresentacao .fade-card {
       <h2>Formulário de Cálculo</h2>
       <div class="section">
         <label>Produto:<input type="text" id="produto" /></label>
-        <label>Preço de Venda (R$):<input type="number" id="precoVenda" /></label>
         <label>Custo do Produto (R$):<input type="number" id="custoProduto" /></label>
 
         <h3>Mercado Livre</h3>
@@ -167,6 +166,7 @@ body.modo-apresentacao .fade-card {
         <label>Custos Variáveis (R$):<input type="number" id="mlVariavel" /></label>
         <label>Imposto (%):<input type="number" id="mlImposto" /></label>
         <label>Comissão do Vendedor (%):<input type="number" id="mlComissao" /></label>
+        <label>Preço Mínimo (R$):<input type="number" id="mlPrecoMinimo" readonly /></label>
 
         <h3>Shopee</h3>
         <label>Taxas da Plataforma (%):
@@ -184,6 +184,7 @@ body.modo-apresentacao .fade-card {
         <label>Custos Variáveis (R$):<input type="number" id="shVariavel" /></label>
         <label>Imposto (%):<input type="number" id="shImposto" /></label>
         <label>Comissão do Vendedor (%):<input type="number" id="shComissao" /></label>
+        <label>Preço Mínimo (R$):<input type="number" id="shPrecoMinimo" readonly /></label>
 
         <button class="botao-verde" onclick="calcularERegistrar()">Calcular e Registrar</button>
       </div>
@@ -308,12 +309,45 @@ document.getElementById(id).classList.add('ativa');
         document.getElementById('mlTransacao').value = '1.85';
       }
     }
+ function calcularPrecoMinimo(plataforma) {
+      const get = id => parseFloat(document.getElementById(id)?.value) || 0;
+      const taxa = get(plataforma + 'Taxa');
+      const transacao = get(plataforma + 'Transacao');
+      const transferencia = get(plataforma + 'Transferencia');
+      const antecipacao = get(plataforma + 'Antecipacao');
+      const comissao = get(plataforma + 'Comissao');
+      const imposto = get(plataforma + 'Imposto');
+      const fixo = get(plataforma + 'Fixo');
+      const frete = get(plataforma + 'Frete');
+      const variavel = get(plataforma + 'Variavel');
+      const custo = get('custoProduto');
 
+      const t = (taxa + transacao + transferencia + antecipacao) / 100;
+      const c = comissao / 100;
+      const i = imposto / 100;
+      const F = fixo + frete + variavel;
+      const denominador = (1 - t) * (1 - c) - i;
+      if (denominador === 0) return 0;
+      const p = (F * (1 - c) + custo) / denominador;
+      return p;
+    }
+
+    function atualizarPrecosMinimos() {
+      const mlMin = calcularPrecoMinimo('ml');
+      const shMin = calcularPrecoMinimo('sh');
+      const mlField = document.getElementById('mlPrecoMinimo');
+      const shField = document.getElementById('shPrecoMinimo');
+      if (mlField) mlField.value = mlMin.toFixed(2);
+      if (shField) shField.value = shMin.toFixed(2);
+    }
     function calcularERegistrar() {
-  const get = id => parseFloat(document.getElementById(id).value) || 0;
+  const get = id => parseFloat(document.getElementById(id)?.value) || 0;
   const produto = document.getElementById('produto').value;
-  const preco = get('precoVenda');
+  const precoManual = get('precoVenda');
   const custo = get('custoProduto');
+const mlMin = calcularPrecoMinimo('ml');
+  const shMin = calcularPrecoMinimo('sh');
+  atualizarPrecosMinimos();
 
   function calc(plataforma) {
     const taxa = get(plataforma + 'Taxa');
@@ -325,7 +359,8 @@ document.getElementById(id).classList.add('ativa');
     const variavel = get(plataforma + 'Variavel');
     const imposto = get(plataforma + 'Imposto');
     const comissao = get(plataforma + 'Comissao');
-
+    
+    const preco = precoManual || (plataforma === 'ml' ? mlMin : shMin);
     const taxaTotal = preco * ((taxa + transacao + transferencia + antecipacao) / 100);
     const sobra = preco - taxaTotal - fixo - frete - variavel;
     const comissaoValor = sobra * (comissao / 100);
@@ -543,6 +578,11 @@ window.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('#custos input').forEach(input => {
     input.addEventListener('input', salvarCustosVariaveis);
   });
+  document.querySelectorAll('#formulario input, #formulario select').forEach(el => {
+    el.addEventListener('input', atualizarPrecosMinimos);
+    el.addEventListener('change', atualizarPrecosMinimos);
+  });
+  atualizarPrecosMinimos();
 });
 
 function alternarModoEscuro() {
