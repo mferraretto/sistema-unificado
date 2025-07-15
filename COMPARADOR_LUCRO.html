@@ -243,7 +243,7 @@ body.modo-apresentacao .fade-card {
       <label>Gastos Administrativos (R$):<input type="number" id="cv_ml_admin" value="0" /></label>
       <label>Quantidade Média de Vendas Mensais:<input type="number" id="cv_ml_vendas" value="100" /></label>
 <label>Nome do Produto:
-  <input type="text" id="produto" placeholder="Ex: T6 - Cilindros + Arco" required />
+  <input type="text" id="produtoCustos" placeholder="Ex: T6 - Cilindros + Arco" required />
 </label>
       <button class="botao-verde" onclick="calcularCustoVariavelML()">Calcular e Inserir</button>
       <p id="resultadoML" style="margin-top: 10px;"></p>
@@ -258,7 +258,6 @@ body.modo-apresentacao .fade-card {
   <form id="checklistDecisao">
   <br>
   <button onclick="calcularDecisao()" type="button" class="botao-verde">📊 Calcular Melhor Plataforma</button>
-  <div id="resultadoDecisao" style="margin-top: 20px; font-size: 18px; font-weight: bold;"></div>
 
   <div><strong>Produto:</strong></div>
   <label><input type="checkbox" name="item1_sh" value="shopee"> Shopee — Produto de baixo valor ou kit simples</label><br>
@@ -395,6 +394,9 @@ const mlMin = calcularPrecoMinimo('ml');
   const registros = JSON.parse(localStorage.getItem('resultadosLucro')) || [];
   registros.push([ml, sh]);
   localStorage.setItem('resultadosLucro', JSON.stringify(registros));
+      
+ // Desenha o gráfico somente após calcular os valores
+  desenharGraficoLucro(ml, sh);
 
   renderizarCards(); // Reexibe todos os cards salvos
   mostrarAba('resultados');
