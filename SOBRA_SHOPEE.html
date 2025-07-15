@@ -85,7 +85,8 @@ const db = firebase.firestore();
 
 async function salvarMetas() {
   for (let sku in metas) {
-    await db.collection("metasSKU").doc(sku).set({ valor: metas[sku] });
+    const safeSku = sku.replaceAll('/', '__'); // substitui / por __
+    await db.collection("metasSKU").doc(safeSku).set({ valor: metas[sku] });
   }
 }
 
@@ -94,10 +95,12 @@ async function carregarMetas() {
   metas = {};
   const snapshot = await db.collection("metasSKU").get();
   snapshot.forEach((doc) => {
-    metas[doc.id] = doc.data().valor;
+    const originalSku = doc.id.replaceAll('__', '/'); // reverte __ para /
+    metas[originalSku] = doc.data().valor;
   });
   renderizarMetas();
 }
+
 
   function renderizarMetas() {
     const tbody = document.querySelector('#tabelaMetas tbody');
@@ -149,13 +152,15 @@ async function carregarMetas() {
     }
   }
 
- async function excluirMeta(sku, btn) {
+async function excluirMeta(sku, btn) {
   if (confirm("Excluir a meta do SKU " + sku + "?")) {
-await db.collection("metasSKU").doc(sku).delete();
+    const safeSku = sku.replaceAll('/', '__');
+    await db.collection("metasSKU").doc(safeSku).delete();
     delete metas[sku];
     renderizarMetas();
   }
 }
+
 
   function filtrarPorSKU() {
   const filtro = document.getElementById("filtroSKU").value.toLowerCase();
