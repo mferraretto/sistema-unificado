@@ -668,6 +668,11 @@ function carregarMetaMargem() {
 window.onload = () => {
   carregarMetaMargem();
   renderizarCards();
+  const registros = JSON.parse(localStorage.getItem('resultadosLucro')) || [];
+  if (registros.length) {
+    const [ml, sh] = registros[registros.length - 1];
+    desenharGraficoLucro(ml, sh);
+  }
 };
 
 function exportarExcel() {
@@ -753,7 +758,6 @@ function desenharGraficoLucro(ml, sh) {
     }
   });
 }
-desenharGraficoLucro(ml, sh);
 
   </script>
 
