@@ -1,0 +1,247 @@
+
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Sistema de Sobras - Shopee</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+  <style>
+    body { font-family: sans-serif; padding: 20px; background: #f4f4f4; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; background: white; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+    th { background: #eee; }
+    .aba { display: none; }
+    .ativa { display: block; }
+    .aba-btn { margin: 5px 10px 15px 0; padding: 8px 16px; cursor: pointer; }
+    .editInput { display: none; width: 80px; }
+    .mediaBox { margin-top: 10px; }
+  </style>
+</head>
+<body onload="carregarMetas()">
+
+<h2>✅ Sistema de Conferência de Sobras - Shopee</h2>
+<button class="aba-btn" onclick="trocarAba('importar')">📦 Conferir Pedidos</button>
+<button class="aba-btn" onclick="trocarAba('metas')">🎯 Metas por SKU</button>
+
+<div id="importar" class="aba ativa">
+  <input type="file" id="inputExcel" accept=".xlsx" />
+  <label><strong>🔍 Filtrar por SKU:</strong></label>
+<select id="tipoFiltro" onchange="filtrarPorSKU()" style="margin-right: 5px;">
+  <option value="exata">Correspondência Exata</option>
+  <option value="comeca">Começa com</option>
+</select>
+<input type="text" id="filtroSKU" oninput="filtrarPorSKU()" placeholder="Digite o SKU..." />
+
+  <button onclick="exportarCSV()">Exportar CSV</button>
+  <div id="totalSobra" class="mediaBox"></div>
+  <table id="resultado">
+    <thead>
+      <tr>
+        <th>ID do Pedido</th><th>SKU</th><th>Subtotal</th><th>Reembolso</th><th>Cupom</th>
+        <th>Comissão</th><th>Serviço</th><th>Sobra</th><th>% vs Meta</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<div id="metas" class="aba">
+  <h3>🎯 Metas de Sobra por SKU</h3>
+  <input type="text" id="metaSku" placeholder="SKU" />
+  <input type="number" id="metaValor" placeholder="Sobra Esperada (R$)" step="0.01" />
+  <button onclick="adicionarMeta()">Adicionar Meta</button>
+  <table id="tabelaMetas">
+    <thead>
+      <tr><th>SKU</th><th>Meta R$</th><th>Ações</th></tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<script>
+  let metas = {};
+
+  function trocarAba(id) {
+    document.getElementById('importar').classList.remove('ativa');
+    document.getElementById('metas').classList.remove('ativa');
+    document.getElementById(id).classList.add('ativa');
+  }
+
+  function salvarMetas() {
+    localStorage.setItem('metasSobra', JSON.stringify(metas));
+  }
+
+  function carregarMetas() {
+    const salva = localStorage.getItem('metasSobra');
+    if (salva) metas = JSON.parse(salva);
+    renderizarMetas();
+  }
+
+  function renderizarMetas() {
+    const tbody = document.querySelector('#tabelaMetas tbody');
+    tbody.innerHTML = '';
+    for (let sku in metas) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${sku}</td>
+        <td>
+          <span class="valorMeta">R$ ${metas[sku].toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+          <input class="editInput" type="number" value="${metas[sku]}" />
+        </td>
+        <td>
+          <button onclick="editarMeta(this, '${sku}')">✏️</button>
+          <button onclick="excluirMeta('${sku}', this)">🗑️</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    }
+  }
+
+  function adicionarMeta() {
+    const sku = document.getElementById('metaSku').value.trim();
+    const valor = parseFloat(document.getElementById('metaValor').value);
+    if (!sku || isNaN(valor)) return;
+    metas[sku] = valor;
+    salvarMetas();
+    renderizarMetas();
+    document.getElementById('metaSku').value = '';
+    document.getElementById('metaValor').value = '';
+  }
+
+  function editarMeta(botao, sku) {
+    const tr = botao.closest('tr');
+    const span = tr.querySelector('.valorMeta');
+    const input = tr.querySelector('.editInput');
+    if (input.style.display === 'none') {
+      input.style.display = 'inline-block';
+      span.style.display = 'none';
+      botao.textContent = '💾'; return;
+    } else {
+      const novoValor = parseFloat(input.value);
+      if (!isNaN(novoValor)) {
+      input.style.display = 'none'; span.style.display = 'inline-block';
+        metas[sku] = novoValor;
+        salvarMetas();
+        renderizarMetas();
+      }
+    }
+  }
+
+  function excluirMeta(sku, btn) {
+    if (confirm("Excluir a meta do SKU " + sku + "?")) {
+      delete metas[sku];
+      salvarMetas();
+      btn.closest('tr').remove();
+    }
+  }
+
+  function filtrarPorSKU() {
+  const filtro = document.getElementById("filtroSKU").value.toLowerCase();
+  const tipo = document.getElementById("tipoFiltro").value;
+  const linhas = document.querySelectorAll("#resultado tbody tr");
+  
+  linhas.forEach(linha => {
+    const sku = linha.children[1].textContent.toLowerCase();
+
+    if (tipo === "exata") {
+      linha.style.display = sku === filtro ? "" : "none";
+    } else if (tipo === "comeca") {
+      linha.style.display = sku.startsWith(filtro) ? "" : "none";
+    }
+  });
+}
+
+
+  document.getElementById('inputExcel').addEventListener('change', function (e) {
+    const file = e.target.files[0];
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      const data = new Uint8Array(e.target.result);
+      const wb = XLSX.read(data, { type: 'array' });
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      const pedidos = XLSX.utils.sheet_to_json(sheet);
+
+      const contagem = {};
+      pedidos.forEach(p => {
+        const id = p['ID do pedido'];
+        if (id) contagem[id] = (contagem[id] || 0) + 1;
+      });
+
+      const tbody = document.querySelector('#resultado tbody');
+      tbody.innerHTML = '';
+      let totalSobra = 0, totalPercentual = 0, totalPedidos = 0;
+
+      pedidos.forEach(p => {
+        const id = p['ID do pedido'];
+        if (!id || contagem[id] > 1) return;
+
+        const sku = p['Número de referência SKU'] || '';
+        const status = (p['Status do pedido'] || '').toLowerCase();
+        if (!sku || status.includes('cancelado') || status.includes('não pago')) return;
+
+        const subtotal = parseFloat(p['Subtotal do produto']) || 0;
+        const reembolso = parseFloat(p['Reembolso Shopee']) || 0;
+        const cupom = parseFloat(p['Cupom do vendedor']) || 0;
+        const comissao = parseFloat(p['Taxa de comissão']) || 0;
+        const servico = parseFloat(p['Taxa de serviço']) || 0;
+        const sobra = subtotal + reembolso - cupom - comissao - servico;
+        const meta = metas[sku] || 0;
+        const percentual = meta ? ((sobra - meta) / meta) * 100 : 0;
+
+        const tr = document.createElement('tr');
+        if (meta) {
+          if (percentual <= -4) {
+            tr.style.backgroundColor = '#ffe6e6'; tr.style.color = 'red';
+          } else if (percentual <= -2) {
+            tr.style.backgroundColor = '#fff5cc'; tr.style.color = '#aa8800';
+          } else {
+            tr.style.backgroundColor = '#e8f5e9'; tr.style.color = 'green';
+          }
+        }
+
+        tr.innerHTML = `
+          <td>${id}</td><td>${sku}</td>
+          <td>R$ ${subtotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+          <td>R$ ${reembolso.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+          <td>R$ ${cupom.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+          <td>R$ ${comissao.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+          <td>R$ ${servico.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+          <td><strong>R$ ${sobra.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong><br><small>Meta: R$ ${meta.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</small></td>
+          <td>${percentual.toFixed(2)}%</td>`;
+        tbody.appendChild(tr);
+
+        totalSobra += sobra;
+        totalPercentual += percentual;
+        totalPedidos++;
+      });
+
+      
+      // Calcular total esperado com base na quantidade de pedidos por SKU
+      const linhas = document.querySelectorAll("#resultado tbody tr");
+      let esperadoTotal = 0;
+      linhas.forEach(l => {
+        const sku = l.children[1].textContent.trim();
+        if (metas[sku]) esperadoTotal += metas[sku];
+      });
+    
+      const media = totalPedidos ? (totalPercentual / totalPedidos).toFixed(2) : '0.00';
+
+      document.getElementById('totalSobra').innerHTML = `
+        <h3>💰 Sobra Total: R$ ${totalSobra.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</h3>
+        <h3>🎯 Sobra Total Esperada: R$ ${esperadoTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</h3>
+        <h4>📊 Média de Desempenho vs Meta: ${media}%</h4>`;
+    };
+    reader.readAsArrayBuffer(file);
+  });
+
+  function exportarCSV() {
+    const table = document.getElementById("resultado");
+    const rows = Array.from(table.querySelectorAll("tr"));
+    const csv = rows.map(r => Array.from(r.cells).map(c => c.textContent).join(";")).join("\n");
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    saveAs(blob, "relatorio_sobras.csv");
+  }
+</script>
+</body>
+</html>

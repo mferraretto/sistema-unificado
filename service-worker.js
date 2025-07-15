@@ -3,6 +3,7 @@ self.addEventListener("install", function (e) {
   e.waitUntil(
     caches.open("sistema-unificado").then(function (cache) {
       return cache.addAll([
+        "./SOBRA_SHOPEE.html",
         "./",
         "./index.html",
         "./SISTEMA_PRECIFICACAO.html",
