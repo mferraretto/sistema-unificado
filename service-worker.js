@@ -8,6 +8,8 @@ self.addEventListener("install", function (e) {
         "./index.html",
         "./SISTEMA_PRECIFICACAO.html",
         "./COMPARADOR_LUCRO.html",
+        "https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js",
+        "https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js",
         "./manifest.json",
         "./icon-512.png"
       ]);
