@@ -6,8 +6,8 @@
   <title>Sistema de Sobras - Shopee</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+ <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
   <style>
     body { font-family: sans-serif; padding: 20px; background: #f4f4f4; }
     table { width: 100%; border-collapse: collapse; margin-top: 10px; background: white; }
@@ -71,8 +71,9 @@
     appId: "1:884927523696:web:334f198596e85462d2bdb5"
   };
 
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
+  firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
 
   let metas = {};
 
@@ -82,21 +83,22 @@
     document.getElementById(id).classList.add('ativa');
   }
 
- async function salvarMetas() {
-  const metasRef = collection(db, "metasSKU");
+async function salvarMetas() {
   for (let sku in metas) {
-    await setDoc(doc(metasRef, sku), { valor: metas[sku] });
+    await db.collection("metasSKU").doc(sku).set({ valor: metas[sku] });
   }
 }
 
-  async function carregarMetas() {
-  const querySnapshot = await getDocs(collection(db, "metasSKU"));
+
+ async function carregarMetas() {
   metas = {};
-  querySnapshot.forEach((doc) => {
+  const snapshot = await db.collection("metasSKU").get();
+  snapshot.forEach((doc) => {
     metas[doc.id] = doc.data().valor;
   });
   renderizarMetas();
 }
+
 
   function renderizarMetas() {
     const tbody = document.querySelector('#tabelaMetas tbody');
@@ -150,7 +152,7 @@
 
  async function excluirMeta(sku, btn) {
   if (confirm("Excluir a meta do SKU " + sku + "?")) {
-    await deleteDoc(doc(db, "metasSKU", sku));
+await db.collection("metasSKU").doc(sku).delete();
     delete metas[sku];
     renderizarMetas();
   }
