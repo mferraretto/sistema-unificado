@@ -90,7 +90,7 @@ async function salvarMetas() {
 }
 
 
- async function carregarMetas() {
+async function carregarMetas() {
   metas = {};
   const snapshot = await db.collection("metasSKU").get();
   snapshot.forEach((doc) => {
@@ -98,7 +98,6 @@ async function salvarMetas() {
   });
   renderizarMetas();
 }
-
 
   function renderizarMetas() {
     const tbody = document.querySelector('#tabelaMetas tbody');
