@@ -641,11 +641,14 @@ function renderizarCards(registrosParam) {
   window.registros = registros; // Garante acesso global para duplicar/apagar
   const container = document.getElementById('cardsResultados');
   container.innerHTML = '';
+  
 if (container.dataset.firebaseErro === 'true') {
     container.innerHTML = '<p id="firebaseErro" style="color:#e74c3c">⚠️ Não foi possível carregar os resultados online.</p>';
   }
-  registros.forEach(([ml, sh, mg, shn], index) => {
-    const produtoNome = ml?.produto || sh?.produto || mg?.produto || shn?.produto || 'Produto';
+  
+ registros.forEach((registro, index) => {
+    const { ml, sh, mg, shn, produto } = registro;
+    const produtoNome = produto || ml?.produto || sh?.produto || mg?.produto || shn?.produto || 'Produto';
 
     const lucros = {
       ml: parseFloat(ml?.lucro || 0),
@@ -917,10 +920,6 @@ function calcularDecisao() {
   }
 }
 
-function carregarMetaMargem() {
-  const meta = parseFloat(localStorage.getItem('metaMargem')) || 0;
-  document.getElementById('metaMargem').value = meta;
-}
 window.onload = async () => {
   carregarMetaMargem();
   
@@ -932,10 +931,12 @@ window.onload = async () => {
   renderizarCards(combinados);
 
   if (combinados.length) {
-    const [ml, sh, mg, shn] = combinados[combinados.length - 1];
+    const ultimo = combinados[combinados.length - 1];
+    const { ml, sh, mg, shn } = ultimo || {};
     desenharGraficoLucro(ml, sh, mg, shn);
   }
 };
+
 
 function exportarExcel() {
   const registros = JSON.parse(localStorage.getItem('resultadosLucro')) || [];
