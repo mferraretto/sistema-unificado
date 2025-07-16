@@ -594,26 +594,39 @@ async function salvarCalculosNoFirebase(dados) {
   }
 }
 
-    async function carregarResultadosFirebase() {
- try {
-        const snapshot = await db
-          .collection("resultadosLucro")
-          .orderBy("timestamp")
-          .get();
+ async function carregarResultadosFirebase() {
+  try {
+    const snapshot = await db
+      .collection("resultadosLucro")
+      .orderBy("timestamp", "desc")
+      .get();
 
-        const registros = [];
-        snapshot.forEach(doc => {
-          const data = doc.data();
-          registros.push([data.ml, data.sh, data.mg, data.shn]);
-        });
-        return registros;
-      } catch (error) {
-        console.error('Erro ao carregar do Firebase:', error);
-        return null;
-      }
-    }
+    const registros = [];
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      registros.push({
+        produto: data.produto || 'Produto sem nome',
+        precoManual: parseFloat(data.precoManual) || 0,
+        custoProduto: parseFloat(data.custoProduto) || 0,
+        ml: data.ml || {},
+        sh: data.sh || {},
+        mg: data.mg || {},
+        shn: data.shn || {},
+        timestamp: data.timestamp?.toDate?.() || new Date()
+      });
+    });
+
+    return registros;
+  } catch (error) {
+    console.error('❌ Erro ao carregar do Firebase:', error);
+    return [];
+  }
+}
+
+
 function renderizarCards(registrosParam) {
   const registros = registrosParam || JSON.parse(localStorage.getItem('resultadosLucro')) || [];
+  window.registros = registros; // Garante acesso global para duplicar/apagar
   const container = document.getElementById('cardsResultados');
   container.innerHTML = '';
 
@@ -648,13 +661,24 @@ function renderizarCards(registrosParam) {
       return `${p?.margem || '0'}%${status}`;
     };
 
+    const formatPorcentagem = (valor) =>
+      isNaN(parseFloat(valor)) ? '0%' : `${parseFloat(valor)}%`;
+
     const rows = [
       ['Preço', ml?.preco, sh?.preco, mg?.preco, shn?.preco],
       ['Taxas', ml?.taxaTotal, sh?.taxaTotal, mg?.taxaTotal, shn?.taxaTotal],
       ['Custo Fixo', ml?.fixo, sh?.fixo, mg?.fixo, shn?.fixo],
       ['Frete', ml?.frete, sh?.frete, mg?.frete, shn?.frete],
-      ['Antecipação', ml?.antecipacao + '%', sh?.antecipacao + '%', mg?.antecipacao + '%', shn?.antecipacao + '%'],
-      ['Transferência', ml?.transferencia + '%', sh?.transferencia + '%', mg?.transferencia + '%', shn?.transferencia + '%'],
+      ['Antecipação',
+        formatPorcentagem(ml?.antecipacao),
+        formatPorcentagem(sh?.antecipacao),
+        formatPorcentagem(mg?.antecipacao),
+        formatPorcentagem(shn?.antecipacao)],
+      ['Transferência',
+        formatPorcentagem(ml?.transferencia),
+        formatPorcentagem(sh?.transferencia),
+        formatPorcentagem(mg?.transferencia),
+        formatPorcentagem(shn?.transferencia)],
       ['Custos Variáveis', ml?.variavel, sh?.variavel, mg?.variavel, shn?.variavel],
       ['Sobra', ml?.sobra, sh?.sobra, mg?.sobra, shn?.sobra],
       ['Comissão', ml?.comissao, sh?.comissao, mg?.comissao, shn?.comissao],
@@ -727,6 +751,7 @@ function renderizarCards(registrosParam) {
     `;
   });
 }
+
 function apagarRegistro(index) {
   const registros = JSON.parse(localStorage.getItem('resultadosLucro')) || [];
   registros.splice(index, 1); // Remove o item
