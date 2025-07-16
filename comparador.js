@@ -13,11 +13,12 @@ if (!firebase.apps.length) {
 const db = firebase.firestore();
 
 function mostrarAba(id) {
-  document.querySelectorAll('.aba').forEach(a => a.classList.remove('ativa'));
-  document.getElementById(id).classList.add('ativa');
+  document.querySelectorAll('.aba').forEach(aba => aba.classList.remove('ativa'));
+  const novaAba = document.getElementById(id);
+  novaAba.classList.add('ativa');
 
   if (id === 'resultados') {
-    carregarResultadosAoIniciar(); // carrega os resultados sempre que abre a aba
+    carregarResultadosAoIniciar(); // 🔁 carrega do Firebase
   }
 }
 
@@ -559,16 +560,18 @@ window.addEventListener('DOMContentLoaded', async () => {
   }
 });
 async function carregarResultadosAoIniciar() {
-  const firebaseRegistros = await carregarResultadosFirebase();
-  renderizarCards(firebaseRegistros);
+  const abaAtiva = document.querySelector('.aba.ativa');
+  if (abaAtiva && abaAtiva.id === 'resultados') {
+    const firebaseRegistros = await carregarResultadosFirebase();
+    renderizarCards(firebaseRegistros);
 
-  if (firebaseRegistros.length > 0) {
-    const ultimo = firebaseRegistros[firebaseRegistros.length - 1];
-    const { ml, sh, mg, shn } = ultimo || {};
-    desenharGraficoLucro(ml, sh, mg, shn);
+    if (firebaseRegistros.length > 0) {
+      const ultimo = firebaseRegistros[firebaseRegistros.length - 1];
+      const { ml, sh, mg, shn } = ultimo || {};
+      desenharGraficoLucro(ml, sh, mg, shn);
+    }
   }
 }
-
 
 function exportarExcel() {
   const registros = JSON.parse(localStorage.getItem('resultadosLucro')) || [];
