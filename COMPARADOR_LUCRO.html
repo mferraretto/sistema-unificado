@@ -554,7 +554,7 @@ async function calcularERegistrar() {
 
   // Salvar localmente
   const registros = JSON.parse(localStorage.getItem('resultadosLucro')) || [];
-  registros.push([ml, sh, mg, shn]);
+  registros.push({ ml, sh, mg, shn, produto, precoManual, custo });
   localStorage.setItem('resultadosLucro', JSON.stringify(registros));
 
   // Salvar no Firebase
@@ -637,7 +637,7 @@ async function salvarCalculosNoFirebase(dados) {
 
 
 function renderizarCards(registrosParam) {
-  const registros = registrosParam || JSON.parse(localStorage.getItem('resultadosLucro')) || [];
+  const registros = normalizarRegistros(registrosParam || JSON.parse(localStorage.getItem('resultadosLucro')) || []);
   window.registros = registros; // Garante acesso global para duplicar/apagar
   const container = document.getElementById('cardsResultados');
   container.innerHTML = '';
@@ -770,13 +770,13 @@ if (container.dataset.firebaseErro === 'true') {
 }
 
 function apagarRegistro(index) {
-  const registros = JSON.parse(localStorage.getItem('resultadosLucro')) || [];
+  const registros = normalizarRegistros(JSON.parse(localStorage.getItem('resultadosLucro')) || []);
   registros.splice(index, 1); // Remove o item
   localStorage.setItem('resultadosLucro', JSON.stringify(registros));
   renderizarCards(registros); // Atualiza a tela
 }
 function duplicarRegistro(index) {
-  const registros = JSON.parse(localStorage.getItem('resultadosLucro')) || [];
+  const registros = normalizarRegistros(JSON.parse(localStorage.getItem('resultadosLucro')) || []);
   const copia = JSON.parse(JSON.stringify(registros[index])); // duplicação profunda
   registros.splice(index + 1, 0, copia); // insere logo abaixo
   localStorage.setItem('resultadosLucro', JSON.stringify(registros));
@@ -924,32 +924,51 @@ function carregarMetaMargem() {
   const input = document.getElementById('metaMargem');
   if (input) input.value = meta;
 }
+function normalizarRegistros(lista) {
+  return (lista || []).map(r => {
+    if (Array.isArray(r)) {
+      const [ml, sh, mg, shn] = r;
+      return { ml, sh, mg, shn, produto: ml?.produto || sh?.produto || '' };
+    }
+    return r;
+  });
+}
 
 window.onload = async () => {
-  carregarMetaMargem();
+    carregarMetaMargem();
   
-  const localRegistros = JSON.parse(localStorage.getItem('resultadosLucro')) || [];
-  const firebaseRegistros = await carregarResultadosFirebase();
-  const combinados = firebaseRegistros ? [...localRegistros, ...firebaseRegistros] : localRegistros;
+const rawLocal = JSON.parse(localStorage.getItem('resultadosLucro')) || [];
+    const localRegistros = rawLocal.map(r => {
+      if (Array.isArray(r)) {
+        const [ml, sh, mg, shn] = r;
+        return { ml, sh, mg, shn, produto: ml?.produto || '', precoManual: 0, custo: 0 };
+      }
+      return r;
+    });
 
-  localStorage.setItem('resultadosLucro', JSON.stringify(combinados));
-  renderizarCards(combinados);
+  localStorage.setItem('resultadosLucro', JSON.stringify(localRegistros));
 
-  if (combinados.length) {
-    const ultimo = combinados[combinados.length - 1];
-    const { ml, sh, mg, shn } = ultimo || {};
-    desenharGraficoLucro(ml, sh, mg, shn);
-  }
-};
+    const firebaseRegistros = await carregarResultadosFirebase();
+    const combinados = firebaseRegistros ? [...localRegistros, ...firebaseRegistros] : localRegistros;
 
+    localStorage.setItem('resultadosLucro', JSON.stringify(combinados));
+    renderizarCards(combinados);
+
+    if (combinados.length) {
+      const ultimo = combinados[combinados.length - 1];
+      const { ml, sh, mg, shn } = ultimo || {};
+      desenharGraficoLucro(ml, sh, mg, shn);
+    }
+  };
 
 function exportarExcel() {
   const registros = JSON.parse(localStorage.getItem('resultadosLucro')) || [];
   if (registros.length === 0) return alert("Nenhum cálculo para exportar!");
 
   const planilha = [];
-  registros.forEach(([ml, sh]) => {
-    planilha.push({
+registros.forEach(r => {
+    const { ml, sh } = Array.isArray(r) ? { ml: r[0], sh: r[1] } : r;
+  planilha.push({
       Produto: ml.produto,
       Plataforma: 'Mercado Livre',
       Preço: ml.preco,
