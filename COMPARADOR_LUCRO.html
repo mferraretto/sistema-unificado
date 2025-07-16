@@ -899,7 +899,9 @@ function exportarExcel() {
 }
 function desenharGraficoLucro(ml, sh) {
   const ctx = document.getElementById('graficoLucro').getContext('2d');
-  if (window.graficoLucro) window.graficoLucro.destroy(); // Evita duplicações
+  if (window.graficoLucro instanceof Chart) {
+    window.graficoLucro.destroy(); // Evita duplicações
+  }
 
   window.graficoLucro = new Chart(ctx, {
     type: 'bar',
