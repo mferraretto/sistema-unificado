@@ -893,7 +893,7 @@ window.onload = async () => {
   renderizarCards(combinados);
 
   if (combinados.length) {
- const [ml, sh, mg, shn] = registros[registros.length - 1];
+    const [ml, sh, mg, shn] = combinados[combinados.length - 1];
     desenharGraficoLucro(ml, sh, mg, shn);
   }
 };
