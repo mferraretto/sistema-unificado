@@ -646,16 +646,3 @@ const firebaseConfig = {
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
   // Força o carregamento dos resultados do Firebase quando clica na aba "Resultados"
-document.addEventListener('DOMContentLoaded', () => {
-  document.querySelector('button[onclick="mostrarAba(\'resultados\')"]').addEventListener('click', async () => {
-    const firebaseRegistros = await carregarResultadosFirebase();
-    renderizarCards(firebaseRegistros);
-
-    if (firebaseRegistros.length > 0) {
-      const ultimo = firebaseRegistros[firebaseRegistros.length - 1];
-      const { ml, sh, mg, shn } = ultimo || {};
-      desenharGraficoLucro(ml, sh, mg, shn);
-    }
-  });
-});
-
