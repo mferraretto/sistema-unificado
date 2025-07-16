@@ -1,9 +1,9 @@
- function mostrarAba(id) {
-  document.querySelectorAll('.aba').forEach(aba => aba.classList.remove('ativa'));
+function mostrarAba(id) {
+  document.querySelectorAll('.aba').forEach(a => a.classList.remove('ativa'));
   document.getElementById(id).classList.add('ativa');
 
   if (id === 'resultados') {
-    carregarResultados(); // opcional, se quiser forçar recarregamento ao trocar de aba
+    carregarResultadosAoIniciar(); // carrega os resultados sempre que abre a aba
   }
 }
 
@@ -544,6 +544,16 @@ window.addEventListener('DOMContentLoaded', async () => {
     desenharGraficoLucro(ml, sh, mg, shn);
   }
 });
+async function carregarResultadosAoIniciar() {
+  const firebaseRegistros = await carregarResultadosFirebase();
+  renderizarCards(firebaseRegistros);
+
+  if (firebaseRegistros.length > 0) {
+    const ultimo = firebaseRegistros[firebaseRegistros.length - 1];
+    const { ml, sh, mg, shn } = ultimo || {};
+    desenharGraficoLucro(ml, sh, mg, shn);
+  }
+}
 
 
 function exportarExcel() {
