@@ -191,44 +191,70 @@ async function salvarCalculosNoFirebase(dados) {
   }
 }
 
- async function carregarResultadosFirebase() {
+async function carregarResultadosFirebase() {
   const container = document.getElementById('cardsResultados');
-      try {
+
+  try {
     const snapshot = await db
       .collection("resultadosLucro")
       .orderBy("timestamp", "desc")
       .get();
 
     const registros = [];
+
     snapshot.forEach(doc => {
       const data = doc.data();
-   registros.push({
-  produto: data.produto || 'Produto sem nome',
-  precoManual: parseFloat(data.ml?.preco || 0),
-  custoProduto: parseFloat(data.ml?.custo || 0),
-  ml: data.ml || {},
-  sh: data.sh || {},
-  mg: data.mg || {},
-  shn: data.shn || {},
-  timestamp: data.timestamp?.toDate?.() || new Date()
-});
 
+      // Função auxiliar para converter todos os campos numéricos corretamente
+      const normalizarPlataforma = (plataforma) => {
+        const campos = ["preco", "custo", "frete", "fixo", "antecipacao", "transferencia", "variavel", "transacao", "comissao", "imposto", "sobra", "taxaTotal", "lucro", "margem"];
+        const resultado = {};
+        campos.forEach(campo => {
+          resultado[campo] = parseFloat(plataforma?.[campo] || 0);
+        });
+        resultado.plataforma = plataforma?.plataforma || '';
+        resultado.produto = plataforma?.produto || '';
+        return resultado;
+      };
+
+      registros.push({
+        produto: data.produto || 
+                 data.ml?.produto || 
+                 data.sh?.produto || 
+                 data.mg?.produto || 
+                 data.shn?.produto || 'Produto sem nome',
+
+        precoManual: parseFloat(data.ml?.preco || 0),
+        custoProduto: parseFloat(data.ml?.custo || 0),
+
+        ml: normalizarPlataforma(data.ml),
+        sh: normalizarPlataforma(data.sh),
+        mg: normalizarPlataforma(data.mg),
+        shn: normalizarPlataforma(data.shn),
+
+        timestamp: data.timestamp?.toDate?.() || new Date()
+      });
     });
- // remove aviso de erro se houver
-        const aviso = document.getElementById('firebaseErro');
-        if (aviso) aviso.remove();
-        container.dataset.firebaseErro = '';
+
+    // Remove aviso se havia erro anterior
+    const aviso = document.getElementById('firebaseErro');
+    if (aviso) aviso.remove();
+    container.dataset.firebaseErro = '';
+
     return registros;
+
   } catch (error) {
     console.error('❌ Erro ao carregar do Firebase:', error);
-        if (!document.getElementById('firebaseErro')) {
-          const msg = document.createElement('p');
-          msg.id = 'firebaseErro';
-          msg.textContent = '⚠️ Não foi possível carregar os resultados online.';
-          msg.style.color = '#e74c3c';
-          container.prepend(msg);
-        }
-        container.dataset.firebaseErro = 'true';
+
+    if (!document.getElementById('firebaseErro')) {
+      const msg = document.createElement('p');
+      msg.id = 'firebaseErro';
+      msg.textContent = '⚠️ Não foi possível carregar os resultados online.';
+      msg.style.color = '#e74c3c';
+      container.prepend(msg);
+    }
+
+    container.dataset.firebaseErro = 'true';
     return [];
   }
 }
@@ -261,17 +287,17 @@ function normalizarRegistros(registros) {
   });
 }
 
-function renderizarCards(registrosParam) {
-  const registros = normalizarRegistros(registrosParam || JSON.parse(localStorage.getItem('resultadosLucro')) || []);
-  window.registros = registros; // Garante acesso global para duplicar/apagar
+function renderizarCards(registros) {
+  window.registros = registros || [];
   const container = document.getElementById('cardsResultados');
   container.innerHTML = '';
-  
-if (container.dataset.firebaseErro === 'true') {
+
+  if (container.dataset.firebaseErro === 'true') {
     container.innerHTML = '<p id="firebaseErro" style="color:#e74c3c">⚠️ Não foi possível carregar os resultados online.</p>';
+    return;
   }
-  
- registros.forEach((registro, index) => {
+
+  registros.forEach((registro, index) => {
     const { ml, sh, mg, shn, produto } = registro;
     const produtoNome = produto || ml?.produto || sh?.produto || mg?.produto || shn?.produto || 'Produto';
 
@@ -393,6 +419,96 @@ if (container.dataset.firebaseErro === 'true') {
     `;
   });
 }
+let graficoLucro; // Mantém o gráfico global para destruição
+
+function renderizarGraficoLucro(registros) {
+  const ctx = document.getElementById('graficoLucroCanvas').getContext('2d');
+
+  // Destroi gráfico anterior se existir
+  if (graficoLucro) graficoLucro.destroy();
+
+  const labels = registros.map(r =>
+    r.produto || r.ml?.produto || r.sh?.produto || r.mg?.produto || r.shn?.produto || 'Produto'
+  );
+
+  const lucroML = registros.map(r => parseFloat(r.ml?.lucro || 0));
+  const lucroSH = registros.map(r => parseFloat(r.sh?.lucro || 0));
+  const lucroMG = registros.map(r => parseFloat(r.mg?.lucro || 0));
+  const lucroSHN = registros.map(r => parseFloat(r.shn?.lucro || 0));
+
+  graficoLucro = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: 'Mercado Livre',
+          data: lucroML,
+          backgroundColor: '#f39c12'
+        },
+        {
+          label: 'Shopee',
+          data: lucroSH,
+          backgroundColor: '#e74c3c'
+        },
+        {
+          label: 'Magalu',
+          data: lucroMG,
+          backgroundColor: '#3498db'
+        },
+        {
+          label: 'Shein',
+          data: lucroSHN,
+          backgroundColor: '#8e44ad'
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        title: {
+          display: true,
+          text: 'Lucro por Plataforma'
+        },
+        tooltip: {
+          callbacks: {
+            label: ctx => `R$ ${ctx.raw?.toFixed(2)}`
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          title: {
+            display: true,
+            text: 'Lucro (R$)'
+          }
+        }
+      }
+    }
+  });
+}
+function aplicarFiltrosResultados() {
+  const plataformaSelecionada = document.getElementById('filtroPlataforma').value;
+  const termoProduto = document.getElementById('filtroProduto').value.toLowerCase();
+
+  const registrosFiltrados = window.registros.filter(registro => {
+    const nomeProduto = (registro.produto || registro.ml?.produto || '').toLowerCase();
+
+    const condicaoProduto = termoProduto === '' || nomeProduto.includes(termoProduto);
+    const condicaoPlataforma =
+      plataformaSelecionada === '' || !!registro[plataformaSelecionada];
+
+    return condicaoProduto && condicaoPlataforma;
+  });
+
+  renderizarCards(registrosFiltrados);
+  renderizarGraficoLucro(registrosFiltrados);
+
+  const msg = document.getElementById('mensagemResultados');
+  msg.textContent = `${registrosFiltrados.length} produto(s) encontrado(s).`;
+}
+
 
 function apagarRegistro(index) {
   const registros = normalizarRegistros(JSON.parse(localStorage.getItem('resultadosLucro')) || []);
