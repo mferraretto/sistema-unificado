@@ -936,31 +936,24 @@ function normalizarRegistros(lista) {
 }
 
 window.onload = async () => {
-    carregarMetaMargem();
-  
-const rawLocal = JSON.parse(localStorage.getItem('resultadosLucro')) || [];
-    const localRegistros = rawLocal.map(r => {
-      if (Array.isArray(r)) {
-        const [ml, sh, mg, shn] = r;
-        return { ml, sh, mg, shn, produto: ml?.produto || '', precoManual: 0, custo: 0 };
-      }
-      return r;
-    });
+  carregarMetaMargem();
 
-  localStorage.setItem('resultadosLucro', JSON.stringify(localRegistros));
+  const firebaseRegistros = await carregarResultadosFirebase();
 
-    const firebaseRegistros = await carregarResultadosFirebase();
-    const combinados = firebaseRegistros ? [...localRegistros, ...firebaseRegistros] : localRegistros;
+  if (firebaseRegistros.length > 0) {
+    // Salva no localStorage apenas os dados do Firebase
+    localStorage.setItem('resultadosLucro', JSON.stringify(firebaseRegistros));
+    renderizarCards(firebaseRegistros);
 
-    localStorage.setItem('resultadosLucro', JSON.stringify(combinados));
-    renderizarCards(combinados);
-
-    if (combinados.length) {
-      const ultimo = combinados[combinados.length - 1];
-      const { ml, sh, mg, shn } = ultimo || {};
-      desenharGraficoLucro(ml, sh, mg, shn);
-    }
-  };
+    const ultimo = firebaseRegistros[firebaseRegistros.length - 1];
+    const { ml, sh, mg, shn } = ultimo || {};
+    desenharGraficoLucro(ml, sh, mg, shn);
+  } else {
+    // Se Firebase falhar, tenta carregar local
+    const localRegistros = JSON.parse(localStorage.getItem('resultadosLucro')) || [];
+    renderizarCards(localRegistros);
+  }
+};
 
 function exportarExcel() {
   const registros = JSON.parse(localStorage.getItem('resultadosLucro')) || [];
