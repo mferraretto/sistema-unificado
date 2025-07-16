@@ -1,6 +1,15 @@
+const firebaseConfig = {
+    apiKey: "AIzaSyDskmCmkvGgnV9I_MkhBgHOsCoU4VarZbw",
+    authDomain: "sobra-shopee.firebaseapp.com",
+    projectId: "sobra-shopee",
+    storageBucket: "sobra-shopee.appspot.com",
+    messagingSenderId: "884927523696",
+    appId: "1:884927523696:web:334f198596e85462d2bdb5"
+};
 if (!firebase.apps.length) {
   firebase.initializeApp(firebaseConfig);
 }
+
 const db = firebase.firestore();
 
 function mostrarAba(id) {
@@ -652,16 +661,3 @@ function desenharGraficoLucro(ml, sh, mg, shn) {
     }
   });
 }
-
-const firebaseConfig = {
-    apiKey: "AIzaSyDskmCmkvGgnV9I_MkhBgHOsCoU4VarZbw",
-    authDomain: "sobra-shopee.firebaseapp.com",
-    projectId: "sobra-shopee",
-    storageBucket: "sobra-shopee.appspot.com",
-    messagingSenderId: "884927523696",
-    appId: "1:884927523696:web:334f198596e85462d2bdb5"
-  };
-
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
-  // Força o carregamento dos resultados do Firebase quando clica na aba "Resultados"
