@@ -624,8 +624,7 @@ function desenharGraficoLucro(ml, sh, mg, shn) {
   });
 }
 
-  </script>
-  const firebaseConfig = {
+const firebaseConfig = {
     apiKey: "AIzaSyDskmCmkvGgnV9I_MkhBgHOsCoU4VarZbw",
     authDomain: "sobra-shopee.firebaseapp.com",
     projectId: "sobra-shopee",
