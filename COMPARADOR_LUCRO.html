@@ -552,11 +552,6 @@ async function calcularERegistrar() {
   const mg = calc('mg');
   const shn = calc('shn');
 
-  // Salvar localmente
-  const registros = JSON.parse(localStorage.getItem('resultadosLucro')) || [];
-  registros.push({ ml, sh, mg, shn, produto, precoManual, custo });
-  localStorage.setItem('resultadosLucro', JSON.stringify(registros));
-
   // Salvar no Firebase
   try {
     await firebase.firestore().collection("resultadosLucro").add({
@@ -572,8 +567,9 @@ async function calcularERegistrar() {
     console.error("Erro ao salvar no Firebase:", error);
   }
 
-  // Atualizar tela
+  // Atualizar tela com dados mais recentes
   desenharGraficoLucro(ml, sh, mg, shn);
+    const registros = await carregarResultadosFirebase();
   renderizarCards(registros);
   mostrarAba('resultados');
 }
@@ -605,17 +601,17 @@ async function salvarCalculosNoFirebase(dados) {
     const registros = [];
     snapshot.forEach(doc => {
       const data = doc.data();
-   registros.push({
-  produto: data.produto || 'Produto sem nome',
-  precoManual: parseFloat(data.ml?.preco || 0),
-  custoProduto: parseFloat(data.ml?.custo || 0),
-  ml: data.ml || {},
-  sh: data.sh || {},
-  mg: data.mg || {},
-  shn: data.shn || {},
-  timestamp: data.timestamp?.toDate?.() || new Date()
-});
-
+       registros.push({
+        id: doc.id,
+        produto: data.produto || 'Produto sem nome',
+        precoManual: parseFloat(data.ml?.preco || 0),
+        custoProduto: parseFloat(data.ml?.custo || 0),
+        ml: data.ml || {},
+        sh: data.sh || {},
+        mg: data.mg || {},
+        shn: data.shn || {},
+        timestamp: data.timestamp?.toDate?.() || new Date()
+      });
     });
  // remove aviso de erro se houver
         const aviso = document.getElementById('firebaseErro');
@@ -664,8 +660,12 @@ function normalizarRegistros(registros) {
   });
 }
 
-function renderizarCards(registrosParam) {
-  const registros = normalizarRegistros(registrosParam || JSON.parse(localStorage.getItem('resultadosLucro')) || []);
+async function renderizarCards(registrosParam) {
+  let registros = registrosParam;
+  if (!Array.isArray(registros)) {
+    registros = await carregarResultadosFirebase();
+  }
+  registros = normalizarRegistros(registros || []);
   window.registros = registros; // Garante acesso global para duplicar/apagar
   const container = document.getElementById('cardsResultados');
   container.innerHTML = '';
@@ -797,18 +797,36 @@ if (container.dataset.firebaseErro === 'true') {
   });
 }
 
-function apagarRegistro(index) {
-  const registros = normalizarRegistros(JSON.parse(localStorage.getItem('resultadosLucro')) || []);
-  registros.splice(index, 1); // Remove o item
-  localStorage.setItem('resultadosLucro', JSON.stringify(registros));
-  renderizarCards(registros); // Atualiza a tela
+async function apagarRegistro(index) {
+  const registro = window.registros?.[index];
+  if (!registro?.id) return;
+  try {
+    await db.collection('resultadosLucro').doc(registro.id).delete();
+    const registros = await carregarResultadosFirebase();
+    renderizarCards(registros);
+  } catch (e) {
+    console.error('Erro ao apagar registro:', e);
+  }
 }
-function duplicarRegistro(index) {
-  const registros = normalizarRegistros(JSON.parse(localStorage.getItem('resultadosLucro')) || []);
-  const copia = JSON.parse(JSON.stringify(registros[index])); // duplicação profunda
-  registros.splice(index + 1, 0, copia); // insere logo abaixo
-  localStorage.setItem('resultadosLucro', JSON.stringify(registros));
-  renderizarCards(registros);
+
+async function duplicarRegistro(index) {
+  const registro = window.registros?.[index];
+  if (!registro) return;
+  const { id, ...dados } = registro;
+  try {
+    await db.collection('resultadosLucro').add({
+      timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+      produto: dados.produto,
+      ml: dados.ml,
+      sh: dados.sh,
+      mg: dados.mg,
+      shn: dados.shn
+    });
+    const registros = await carregarResultadosFirebase();
+    renderizarCards(registros);
+  } catch (e) {
+    console.error('Erro ao duplicar registro:', e);
+  }
 }
 
 function calcularCustoVariavelShopee() {
@@ -862,17 +880,6 @@ function carregarCustosVariaveis() {
     }
   });
 }
-window.addEventListener('DOMContentLoaded', () => {
-  carregarCustosVariaveis();
-  document.querySelectorAll('#custos input').forEach(input => {
-    input.addEventListener('input', salvarCustosVariaveis);
-  });
-  document.querySelectorAll('#formulario input, #formulario select').forEach(el => {
-    el.addEventListener('input', atualizarPrecosMinimos);
-    el.addEventListener('change', atualizarPrecosMinimos);
-  });
-  atualizarPrecosMinimos();
-});
 
 function alternarModoEscuro() {
   const corpo = document.body;
@@ -891,12 +898,32 @@ window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('toggleDark').innerText = '☀️';
   }
 
-  // já existente
   carregarCustosVariaveis();
+
   document.querySelectorAll('#custos input').forEach(input => {
     input.addEventListener('input', salvarCustosVariaveis);
   });
+
+  document.querySelectorAll('#formulario input, #formulario select').forEach(el => {
+    el.addEventListener('input', atualizarPrecosMinimos);
+    el.addEventListener('change', atualizarPrecosMinimos);
+  });
+
+  atualizarPrecosMinimos();
+
+  // Força o carregamento dos resultados do Firebase ao clicar na aba
+  document.querySelector('button[onclick="mostrarAba(\'resultados\')"]')?.addEventListener('click', async () => {
+    const firebaseRegistros = await carregarResultadosFirebase();
+    renderizarCards(firebaseRegistros);
+
+    if (firebaseRegistros.length > 0) {
+      const ultimo = firebaseRegistros[firebaseRegistros.length - 1];
+      const { ml, sh, mg, shn } = ultimo || {};
+      desenharGraficoLucro(ml, sh, mg, shn);
+    }
+  });
 });
+
 function exportarPDF() {
   const resultados = document.getElementById('cardsResultados');
   const opt = {
@@ -1063,20 +1090,28 @@ function desenharGraficoLucro(ml, sh, mg, shn) {
 
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
-  // Força o carregamento dos resultados do Firebase quando clica na aba "Resultados"
-document.addEventListener('DOMContentLoaded', () => {
-  document.querySelector('button[onclick="mostrarAba(\'resultados\')"]').addEventListener('click', async () => {
-    const firebaseRegistros = await carregarResultadosFirebase();
-    renderizarCards(firebaseRegistros);
+  // Carrega resultados ao iniciar e mantém botão para atualizar manualmente
+  document.addEventListener('DOMContentLoaded', async () => {
+    const botao = document.querySelector('button[onclick="mostrarAba(\'resultados\')"]');
+    botao.addEventListener('click', async () => {
+      const firebaseRegistros = await carregarResultadosFirebase();
+      renderizarCards(firebaseRegistros);
 
-    if (firebaseRegistros.length > 0) {
-      const ultimo = firebaseRegistros[firebaseRegistros.length - 1];
+      if (firebaseRegistros.length > 0) {
+        const ultimo = firebaseRegistros[firebaseRegistros.length - 1];
+        const { ml, sh, mg, shn } = ultimo || {};
+        desenharGraficoLucro(ml, sh, mg, shn);
+      }
+    });
+
+    const inicialRegistros = await carregarResultadosFirebase();
+    renderizarCards(inicialRegistros);
+    if (inicialRegistros.length > 0) {
+      const ultimo = inicialRegistros[inicialRegistros.length - 1];
       const { ml, sh, mg, shn } = ultimo || {};
       desenharGraficoLucro(ml, sh, mg, shn);
     }
   });
-});
-
 
 </script>
 
