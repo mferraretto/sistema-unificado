@@ -636,6 +636,33 @@ async function salvarCalculosNoFirebase(dados) {
   }
 }
 
+function normalizarRegistros(registros) {
+  if (!Array.isArray(registros)) return [];
+
+  return registros.map(r => {
+    // Caso venha como array [ml, sh, mg, shn]
+    if (Array.isArray(r)) {
+      const [ml, sh, mg, shn] = r;
+      return {
+        ml: ml || {},
+        sh: sh || {},
+        mg: mg || {},
+        shn: shn || {},
+        produto: ml?.produto || sh?.produto || ''
+      };
+    }
+
+    // Caso venha como objeto completo {ml, sh, mg, shn, produto}
+    const { ml = {}, sh = {}, mg = {}, shn = {} } = r;
+    return {
+      ...r,
+      ml,
+      sh,
+      mg,
+      shn
+    };
+  });
+}
 
 function renderizarCards(registrosParam) {
   const registros = normalizarRegistros(registrosParam || JSON.parse(localStorage.getItem('resultadosLucro')) || []);
@@ -925,30 +952,6 @@ function carregarMetaMargem() {
   const input = document.getElementById('metaMargem');
   if (input) input.value = meta;
 }
-function normalizarRegistros(lista) {
-  return (lista || []).map(r => {
-    if (Array.isArray(r)) {
-      const [ml, sh, mg, shn] = r;
-      return { ml, sh, mg, shn, produto: ml?.produto || sh?.produto || '' };
-    }
-    return r;
-  });
-}
-
-document.addEventListener('DOMContentLoaded', async () => {
-  carregarMetaMargem();
-
-  const firebaseRegistros = await carregarResultadosFirebase();
-
-  if (firebaseRegistros.length > 0) {
-    localStorage.setItem('resultadosLucro', JSON.stringify(firebaseRegistros));
-    renderizarCards(firebaseRegistros);
-
-    const ultimo = firebaseRegistros[firebaseRegistros.length - 1];
-    const { ml, sh, mg, shn } = ultimo || {};
-    desenharGraficoLucro(ml, sh, mg, shn);
-  }
-});
 
 
 function exportarExcel() {
