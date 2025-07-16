@@ -919,6 +919,11 @@ function calcularDecisao() {
     resultado.innerHTML = `⚖️ <span style="color: gray;">Empate — Avalie caso a caso ou teste ambas</span>`;
   }
 }
+function carregarMetaMargem() {
+  const meta = parseFloat(localStorage.getItem('metaMargem')) || 0;
+  const input = document.getElementById('metaMargem');
+  if (input) input.value = meta;
+}
 
 window.onload = async () => {
   carregarMetaMargem();
