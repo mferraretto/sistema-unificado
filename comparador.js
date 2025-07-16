@@ -530,6 +530,16 @@ function carregarMetaMargem() {
   const input = document.getElementById('metaMargem');
   if (input) input.value = meta;
 }
+window.addEventListener('DOMContentLoaded', async () => {
+  const firebaseRegistros = await carregarResultadosFirebase();
+  renderizarCards(firebaseRegistros);
+
+  if (firebaseRegistros.length > 0) {
+    const ultimo = firebaseRegistros[firebaseRegistros.length - 1];
+    const { ml, sh, mg, shn } = ultimo || {};
+    desenharGraficoLucro(ml, sh, mg, shn);
+  }
+});
 
 
 function exportarExcel() {
