@@ -935,25 +935,21 @@ function normalizarRegistros(lista) {
   });
 }
 
-window.onload = async () => {
+document.addEventListener('DOMContentLoaded', async () => {
   carregarMetaMargem();
 
   const firebaseRegistros = await carregarResultadosFirebase();
 
   if (firebaseRegistros.length > 0) {
-    // Salva no localStorage apenas os dados do Firebase
     localStorage.setItem('resultadosLucro', JSON.stringify(firebaseRegistros));
     renderizarCards(firebaseRegistros);
 
     const ultimo = firebaseRegistros[firebaseRegistros.length - 1];
     const { ml, sh, mg, shn } = ultimo || {};
     desenharGraficoLucro(ml, sh, mg, shn);
-  } else {
-    // Se Firebase falhar, tenta carregar local
-    const localRegistros = JSON.parse(localStorage.getItem('resultadosLucro')) || [];
-    renderizarCards(localRegistros);
   }
-};
+});
+
 
 function exportarExcel() {
   const registros = JSON.parse(localStorage.getItem('resultadosLucro')) || [];
@@ -1064,6 +1060,18 @@ function desenharGraficoLucro(ml, sh, mg, shn) {
 
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
+  // Força o carregamento dos resultados do Firebase quando clica na aba "Resultados"
+document.querySelector('button[onclick="mostrarAba(\'resultados\')"]').addEventListener('click', async () => {
+  const firebaseRegistros = await carregarResultadosFirebase();
+  renderizarCards(firebaseRegistros);
+
+  if (firebaseRegistros.length > 0) {
+    const ultimo = firebaseRegistros[firebaseRegistros.length - 1];
+    const { ml, sh, mg, shn } = ultimo || {};
+    desenharGraficoLucro(ml, sh, mg, shn);
+  }
+});
+
 </script>
 
 </body>
