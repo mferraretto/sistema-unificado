@@ -605,16 +605,17 @@ async function salvarCalculosNoFirebase(dados) {
     const registros = [];
     snapshot.forEach(doc => {
       const data = doc.data();
-      registros.push({
-        produto: data.produto || 'Produto sem nome',
-        precoManual: parseFloat(data.precoManual) || 0,
-        custoProduto: parseFloat(data.custoProduto) || 0,
-        ml: data.ml || {},
-        sh: data.sh || {},
-        mg: data.mg || {},
-        shn: data.shn || {},
-        timestamp: data.timestamp?.toDate?.() || new Date()
-      });
+   registros.push({
+  produto: data.produto || 'Produto sem nome',
+  precoManual: parseFloat(data.ml?.preco || 0),
+  custoProduto: parseFloat(data.ml?.custo || 0),
+  ml: data.ml || {},
+  sh: data.sh || {},
+  mg: data.mg || {},
+  shn: data.shn || {},
+  timestamp: data.timestamp?.toDate?.() || new Date()
+});
+
     });
  // remove aviso de erro se houver
         const aviso = document.getElementById('firebaseErro');
