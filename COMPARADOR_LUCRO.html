@@ -578,79 +578,6 @@ async function calcularERegistrar() {
   mostrarAba('resultados');
 }
 
-
-  function calc(plataforma) {
-    const taxa = get(plataforma + 'Taxa');
-    const fixo = get(plataforma + 'Fixo');
-    const frete = get(plataforma + 'Frete');
-    const transacao = get(plataforma + 'Transacao');
-    const transferencia = get(plataforma + 'Transferencia');
-    const antecipacao = get(plataforma + 'Antecipacao');
-    const variavel = get(plataforma + 'Variavel');
-    const imposto = get(plataforma + 'Imposto');
-    const comissao = get(plataforma + 'Comissao');
-
-    const preco = precoManual || calcularPrecoMinimo(plataforma);
-    const taxaTotal = preco * ((taxa + transacao + transferencia + antecipacao) / 100);
-    const sobra = preco - taxaTotal - fixo - frete - variavel;
-    const comissaoValor = sobra * (comissao / 100);
-    const impostoValor = preco * (imposto / 100);
-    const lucro = sobra - comissaoValor - impostoValor - custo;
-    const margem = (lucro / preco) * 100;
-
-    const nomes = {
-      ml: 'Mercado Livre',
-      sh: 'Shopee',
-      mg: 'Magalu',
-      shn: 'Shein'
-    };
-
-    return {
-      plataforma: nomes[plataforma] || plataforma.toUpperCase(),
-      produto,
-      preco: preco.toFixed(2),
-      taxaTotal: taxaTotal.toFixed(2),
-      fixo: fixo.toFixed(2),
-      frete: frete.toFixed(2),
-      transacao: transacao.toFixed(2),
-      transferencia: transferencia.toFixed(2),
-      antecipacao: antecipacao.toFixed(2),
-      variavel: variavel.toFixed(2),
-      sobra: sobra.toFixed(2),
-      comissao: comissaoValor.toFixed(2),
-      imposto: impostoValor.toFixed(2),
-      custo: custo.toFixed(2),
-      lucro: lucro.toFixed(2),
-      margem: margem.toFixed(2)
-    };
-  }
-
-  // Cálculo para as 4 plataformas
-  const ml = calc('ml');
-  const sh = calc('sh');
-  const mg = calc('mg');
-  const shn = calc('shn');
-
-  // Salvar no localStorage
-  const registros = JSON.parse(localStorage.getItem('resultadosLucro')) || [];
-  registros.push([ml, sh, mg, shn]);
-  localStorage.setItem('resultadosLucro', JSON.stringify(registros));
-await db.collection('comparativo_lucro').add({
-  produto,
-  precoManual,
-  custoProduto: custo,
-  mercadoLivre: ml,
-  shopee: sh,
-  magalu: mg,
-  shein: shn,
-  dataRegistro: new Date()
-});
-
-  // Redesenhar os cards e gráfico
-  desenharGraficoLucro(ml, sh, mg, shn);
-  renderizarCards();
-  mostrarAba('resultados');
-}
 async function salvarCalculosNoFirebase(dados) {
   try {
     await addDoc(collection(db, "resultadosLucro"), {
@@ -664,6 +591,21 @@ async function salvarCalculosNoFirebase(dados) {
     console.log("Cálculo salvo no Firebase com sucesso!");
   } catch (error) {
     console.error("Erro ao salvar no Firebase:", error);
+  }
+}
+
+    async function carregarResultadosFirebase() {
+  try {
+    const snapshot = await db.collection("resultadosLucro").get();
+    const registros = [];
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      registros.push([data.ml, data.sh, data.mg, data.shn]);
+    });
+    localStorage.setItem('resultadosLucro', JSON.stringify(registros));
+    renderizarCards();
+  } catch (error) {
+    console.error('Erro ao carregar do Firebase:', error);
   }
 }
 
@@ -937,8 +879,9 @@ function carregarMetaMargem() {
   const meta = parseFloat(localStorage.getItem('metaMargem')) || 0;
   document.getElementById('metaMargem').value = meta;
 }
-window.onload = () => {
+window.onload = async () => {
   carregarMetaMargem();
+    await carregarResultadosFirebase();
   renderizarCards();
   const registros = JSON.parse(localStorage.getItem('resultadosLucro')) || [];
   if (registros.length) {
