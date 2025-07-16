@@ -8,7 +8,7 @@ self.addEventListener("install", function (e) {
         "./index.html",
         "./SISTEMA_PRECIFICACAO.html",
         "./COMPARADOR_LUCRO.html",
-                "./comparador.js",
+        "./comparador.js?v=1 " ,
         "https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js",
         "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js",
         "./manifest.json",
