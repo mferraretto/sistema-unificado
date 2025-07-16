@@ -574,7 +574,7 @@ async function calcularERegistrar() {
 
   // Atualizar tela
   desenharGraficoLucro(ml, sh);
-  renderizarCards({ ml, sh, mg, shn });
+  renderizarCards(registros);
   mostrarAba('resultados');
 }
 
@@ -595,22 +595,25 @@ async function salvarCalculosNoFirebase(dados) {
 }
 
     async function carregarResultadosFirebase() {
-  try {
-    const snapshot = await db.collection("resultadosLucro").get();
-    const registros = [];
-    snapshot.forEach(doc => {
-      const data = doc.data();
-      registros.push([data.ml, data.sh, data.mg, data.shn]);
-    });
-    localStorage.setItem('resultadosLucro', JSON.stringify(registros));
-    renderizarCards();
-  } catch (error) {
-    console.error('Erro ao carregar do Firebase:', error);
-  }
-}
+ try {
+        const snapshot = await db
+          .collection("resultadosLucro")
+          .orderBy("timestamp")
+          .get();
 
-function renderizarCards() {
-  const registros = JSON.parse(localStorage.getItem('resultadosLucro')) || [];
+        const registros = [];
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          registros.push([data.ml, data.sh, data.mg, data.shn]);
+        });
+        return registros;
+      } catch (error) {
+        console.error('Erro ao carregar do Firebase:', error);
+        return null;
+      }
+    }
+function renderizarCards(registrosParam) {
+  const registros = registrosParam || JSON.parse(localStorage.getItem('resultadosLucro')) || [];
   const container = document.getElementById('cardsResultados');
   container.innerHTML = '';
 
@@ -728,14 +731,14 @@ function apagarRegistro(index) {
   const registros = JSON.parse(localStorage.getItem('resultadosLucro')) || [];
   registros.splice(index, 1); // Remove o item
   localStorage.setItem('resultadosLucro', JSON.stringify(registros));
-  renderizarCards(); // Atualiza a tela
+  renderizarCards(registros); // Atualiza a tela
 }
 function duplicarRegistro(index) {
   const registros = JSON.parse(localStorage.getItem('resultadosLucro')) || [];
   const copia = JSON.parse(JSON.stringify(registros[index])); // duplicação profunda
   registros.splice(index + 1, 0, copia); // insere logo abaixo
   localStorage.setItem('resultadosLucro', JSON.stringify(registros));
-  renderizarCards();
+  renderizarCards(registros);
 }
 
 function calcularCustoVariavelShopee() {
@@ -881,11 +884,16 @@ function carregarMetaMargem() {
 }
 window.onload = async () => {
   carregarMetaMargem();
-    await carregarResultadosFirebase();
-  renderizarCards();
-  const registros = JSON.parse(localStorage.getItem('resultadosLucro')) || [];
-  if (registros.length) {
-    const [ml, sh] = registros[registros.length - 1];
+  
+  const localRegistros = JSON.parse(localStorage.getItem('resultadosLucro')) || [];
+  const firebaseRegistros = await carregarResultadosFirebase();
+  const combinados = firebaseRegistros ? [...localRegistros, ...firebaseRegistros] : localRegistros;
+
+  localStorage.setItem('resultadosLucro', JSON.stringify(combinados));
+  renderizarCards(combinados);
+
+  if (combinados.length) {
+    const [ml, sh] = combinados[combinados.length - 1];
     desenharGraficoLucro(ml, sh);
   }
 };
