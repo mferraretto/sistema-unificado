@@ -181,7 +181,7 @@ body.dark .card-plataforma h3 {
     font-size: 16px; border-radius: 6px; cursor: pointer;
   ">🌙</button>
       <button onclick="mostrarAba('formulario')">Formulário</button>
-<button onclick="mostrarAba('resultados')">Resultados</button>
+      <button onclick="mostrarAba('resultados')">Resultados</button>
 <button onclick="mostrarAba('custos')">Custos Variáveis</button>
 <button onclick="mostrarAba('abaDecisao')">🧭 Decisão</button>
 
@@ -284,12 +284,14 @@ body.dark .card-plataforma h3 {
 </div>
 
 
-    <div id="resultados" class="aba">
+   <div id="resultados" class="aba">
   <h2>Resultados</h2>
-<button onclick="alternarModoApresentacao()" id="botaoModoApresentacao" style="margin-bottom: 15px;">
-  🎥 Ativar Modo Apresentação
-</button>
-<canvas id="graficoLucro" height="120" style="margin: 40px auto; max-width: 600px;"></canvas>
+
+  <button onclick="alternarModoApresentacao()" id="botaoModoApresentacao" style="margin-bottom: 15px;">
+    🎥 Ativar Modo Apresentação
+  </button>
+
+  <canvas id="graficoLucro" height="120" style="margin: 40px auto; max-width: 600px;"></canvas>
 
   <!-- ⬇️ BLOCO DE META DE MARGEM -->
   <div style="margin-bottom: 15px;">
@@ -299,10 +301,27 @@ body.dark .card-plataforma h3 {
     <button class="botao-verde" onclick="salvarMetaMargem()">Salvar Meta</button>
   </div>
 
+  <!-- ⬇️ FILTROS E ATUALIZAÇÃO -->
+  <div style="margin: 15px 0;">
+    <select id="filtroPlataforma" class="form-control" style="max-width: 200px; display: inline-block;">
+      <option value="">Todas as Plataformas</option>
+      <option value="ml">Mercado Livre</option>
+      <option value="sh">Shopee</option>
+      <option value="mg">Magalu</option>
+      <option value="shn">Shein</option>
+    </select>
+
+    <input id="filtroProduto" type="text" class="form-control" placeholder="Buscar produto..." style="max-width: 300px; display: inline-block; margin-left: 1rem;">
+
+    <button id="btnAtualizarResultados" class="btn btn-outline-primary" style="margin-left: 1rem;">🔄 Atualizar Resultados</button>
+  </div>
+
+  <!-- ⬇️ MENSAGEM DE STATUS -->
+  <div id="mensagemResultados" style="margin: 1rem 0; font-style: italic;"></div>
+
   <!-- ⬇️ AQUI OS CARDS SÃO INSERIDOS -->
   <div id="cardsResultados"></div>
 </div>
-
 
     <div id="custos" class="aba">
   <h2>Cálculo de Custo Variável por Unidade</h2>
