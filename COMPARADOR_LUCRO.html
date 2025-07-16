@@ -573,7 +573,7 @@ async function calcularERegistrar() {
   }
 
   // Atualizar tela
-  desenharGraficoLucro(ml, sh);
+  desenharGraficoLucro(ml, sh, mg, shn);
   renderizarCards(registros);
   mostrarAba('resultados');
 }
@@ -893,8 +893,8 @@ window.onload = async () => {
   renderizarCards(combinados);
 
   if (combinados.length) {
-    const [ml, sh] = combinados[combinados.length - 1];
-    desenharGraficoLucro(ml, sh);
+ const [ml, sh, mg, shn] = registros[registros.length - 1];
+    desenharGraficoLucro(ml, sh, mg, shn);
   }
 };
 
