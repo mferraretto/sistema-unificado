@@ -1,7 +1,11 @@
-  function mostrarAba(id) {
-      document.querySelectorAll('.aba').forEach(a => a.classList.remove('ativa'));
-document.getElementById(id).classList.add('ativa');
-    }
+ function mostrarAba(id) {
+  document.querySelectorAll('.aba').forEach(aba => aba.classList.remove('ativa'));
+  document.getElementById(id).classList.add('ativa');
+
+  if (id === 'resultados') {
+    carregarResultados(); // opcional, se quiser forçar recarregamento ao trocar de aba
+  }
+}
 
     function ajustarTransacaoML() {
       const taxa = document.getElementById('mlTaxa').value;
