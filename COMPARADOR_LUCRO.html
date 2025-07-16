@@ -595,7 +595,8 @@ async function salvarCalculosNoFirebase(dados) {
 }
 
  async function carregarResultadosFirebase() {
-  try {
+  const container = document.getElementById('cardsResultados');
+      try {
     const snapshot = await db
       .collection("resultadosLucro")
       .orderBy("timestamp", "desc")
@@ -615,10 +616,21 @@ async function salvarCalculosNoFirebase(dados) {
         timestamp: data.timestamp?.toDate?.() || new Date()
       });
     });
-
+ // remove aviso de erro se houver
+        const aviso = document.getElementById('firebaseErro');
+        if (aviso) aviso.remove();
+        container.dataset.firebaseErro = '';
     return registros;
   } catch (error) {
     console.error('❌ Erro ao carregar do Firebase:', error);
+        if (!document.getElementById('firebaseErro')) {
+          const msg = document.createElement('p');
+          msg.id = 'firebaseErro';
+          msg.textContent = '⚠️ Não foi possível carregar os resultados online.';
+          msg.style.color = '#e74c3c';
+          container.prepend(msg);
+        }
+        container.dataset.firebaseErro = 'true';
     return [];
   }
 }
@@ -629,7 +641,9 @@ function renderizarCards(registrosParam) {
   window.registros = registros; // Garante acesso global para duplicar/apagar
   const container = document.getElementById('cardsResultados');
   container.innerHTML = '';
-
+if (container.dataset.firebaseErro === 'true') {
+    container.innerHTML = '<p id="firebaseErro" style="color:#e74c3c">⚠️ Não foi possível carregar os resultados online.</p>';
+  }
   registros.forEach(([ml, sh, mg, shn], index) => {
     const produtoNome = ml?.produto || sh?.produto || mg?.produto || shn?.produto || 'Produto';
 
