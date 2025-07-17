@@ -120,6 +120,9 @@ document.querySelectorAll('.tab-button').forEach(btn => {
   });
 });
 
+import { collection, addDoc, doc, setDoc } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
+import { db } from './firebase-init.js'; // ou o caminho correto se estiver separado
+
 async function calcularERegistrar() {
   const produto = document.getElementById('produto').value.trim();
   const custoBase = parseFloat(document.getElementById('custo').value) || 0;
@@ -153,15 +156,15 @@ async function calcularERegistrar() {
       produto,
       plataforma,
       preco: precoFinal,
-      ...dados
+      campos: dados // os campos ficam agrupados aqui
     };
 
     registros.push(registro);
 
-    // 🔥 Salvar no Firebase (estrutura direta – OPÇÃO 2)
+    // 🔥 Firebase Modular - OPÇÃO 2 correta
     try {
-      const docRef = await db.collection("precificacao").doc(userId).collection("registros").doc();
-      await docRef.set(registro);
+      const ref = doc(collection(db, "precificacao")); // vai gerar ID automático
+      await setDoc(ref, registro);
       console.log("✅ Registro salvo no Firebase:", registro);
     } catch (erro) {
       console.error("❌ Erro ao salvar no Firebase:", erro);
@@ -177,14 +180,14 @@ async function calcularERegistrar() {
       <td><button class="btn-ver-detalhes" data-produto="${produto}">Ver Detalhes</button></td>
     `;
     tbody.appendChild(tr);
-
-    // Salvar para visualização local
-    if (!window.detalhesRegistros[produto]) {
-      window.detalhesRegistros[produto] = { produto, detalhes: {} };
-    }
-    window.detalhesRegistros[produto].detalhes[plataforma] = dados;
   }
 }
+
+  if (!window.detalhesRegistros) window.detalhesRegistros = {};
+if (!window.detalhesRegistros[produto]) {
+  window.detalhesRegistros[produto] = { produto, detalhes: {} };
+}
+window.detalhesRegistros[produto].detalhes[plataforma] = dados;
 
 function filtrarRegistros() {
   const filtro = document.getElementById("filtroPlataforma").value;
