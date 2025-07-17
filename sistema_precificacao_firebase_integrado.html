@@ -1,0 +1,406 @@
+
+<!DOCTYPE html>
+
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Sistema de Precificação</title>
+<style>
+    body { font-family: Arial, sans-serif; margin: 20px; background: #f9f9f9; }
+    h2 { margin-top: 30px; }
+    .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+    .tabs button { padding: 10px 20px; border: none; background: #ccc; cursor: pointer; }
+    .tabs button.active { background: #4CAF50; color: white; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 30px; }
+    .section { border: 1px solid #ddd; padding: 15px; background: white; border-radius: 8px; }
+    label { display: block; margin-top: 10px; }
+    input[type=text], input[type=number] { width: 100%; padding: 5px; }
+    .green-btn {
+      background-color: #4CAF50; color: white; padding: 12px 20px;
+      border: none; border-radius: 5px; cursor: pointer; margin-top: 20px;
+    }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    th { background-color: #f2f2f2; }
+  </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+<style>
+  .card-resumo {
+    border: 1px solid #ccc;
+    background: #fff;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    padding: 15px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  }
+  .card-resumo h3 {
+    margin-top: 0;
+  }
+  .tabela-card {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+  }
+  .tabela-card th, .tabela-card td {
+    border: 1px solid #ddd;
+    padding: 6px;
+    text-align: center;
+    font-size: 14px;
+  }
+  .tabela-card th {
+    background-color: #eee;
+  }
+</style>
+<script src="firebase-init.js" type="module"></script></head>
+<body>
+<div class="tabs">
+<button class="tab-button active" data-tab="formulario">📋 Formulário</button>
+<button class="tab-button" data-tab="registros">📑 Registros</button>
+</div>
+<div class="tab-content active" id="formulario">
+<label>PRODUTO:</label>
+<input id="produto" type="text"/>
+<label>CUSTO R$:</label>
+<input id="custo" type="number"/>
+<div class="grid">
+<!-- Seções das plataformas -->
+<!-- INÍCIO -->
+<div class="section"><h3>Mercado Livre</h3><label>Taxas da Plataforma (%):</label><input class="campo" data-campo="Taxas da Plataforma (%)" data-plataforma="Mercado Livre" type="number"/><label>Custo Fixo Plataforma (R$):</label><input class="campo" data-campo="Custo Fixo Plataforma (R$)" data-plataforma="Mercado Livre" type="number"/><label>Frete (R$):</label><input class="campo" data-campo="Frete (R$)" data-plataforma="Mercado Livre" type="number"/><label>Taxa de Transação (%):</label><input class="campo" data-campo="Taxa de Transação (%)" data-plataforma="Mercado Livre" type="number"/><label>Taxa de Transferência (%):</label><input class="campo" data-campo="Taxa de Transferência (%)" data-plataforma="Mercado Livre" type="number"/><label>Taxa de Antecipação (%):</label><input class="campo" data-campo="Taxa de Antecipação (%)" data-plataforma="Mercado Livre" type="number"/><label>Custos Variáveis (R$):</label><input class="campo" data-campo="Custos Variáveis (R$)" data-plataforma="Mercado Livre" type="number"/><label>Imposto (%):</label><input class="campo" data-campo="Imposto (%)" data-plataforma="Mercado Livre" type="number"/><label>Comissão do Vendedor (%):</label><input class="campo" data-campo="Comissão do Vendedor (%)" data-plataforma="Mercado Livre" type="number"/><label><strong>Preço Mínimo (R$):</strong></label><input id="preco-Mercado Livre" readonly="" type="text"/></div><div class="section"><h3>Shopee</h3><label>Taxas da Plataforma (%):</label><input class="campo" data-campo="Taxas da Plataforma (%)" data-plataforma="Shopee" type="number"/><label>Custo Fixo Plataforma (R$):</label><input class="campo" data-campo="Custo Fixo Plataforma (R$)" data-plataforma="Shopee" type="number"/><label>Frete (R$):</label><input class="campo" data-campo="Frete (R$)" data-plataforma="Shopee" type="number"/><label>Taxa de Transação (%):</label><input class="campo" data-campo="Taxa de Transação (%)" data-plataforma="Shopee" type="number"/><label>Taxa de Transferência (%):</label><input class="campo" data-campo="Taxa de Transferência (%)" data-plataforma="Shopee" type="number"/><label>Taxa de Antecipação (%):</label><input class="campo" data-campo="Taxa de Antecipação (%)" data-plataforma="Shopee" type="number"/><label>Custos Variáveis (R$):</label><input class="campo" data-campo="Custos Variáveis (R$)" data-plataforma="Shopee" type="number"/><label>Imposto (%):</label><input class="campo" data-campo="Imposto (%)" data-plataforma="Shopee" type="number"/><label>Comissão do Vendedor (%):</label><input class="campo" data-campo="Comissão do Vendedor (%)" data-plataforma="Shopee" type="number"/><label><strong>Preço Mínimo (R$):</strong></label><input id="preco-Shopee" readonly="" type="text"/></div><div class="section"><h3>MAGALU</h3><label>Taxas da Plataforma (%):</label><input class="campo" data-campo="Taxas da Plataforma (%)" data-plataforma="MAGALU" type="number"/><label>Custo Fixo Plataforma (R$):</label><input class="campo" data-campo="Custo Fixo Plataforma (R$)" data-plataforma="MAGALU" type="number"/><label>Frete (R$):</label><input class="campo" data-campo="Frete (R$)" data-plataforma="MAGALU" type="number"/><label>Taxa de Transação (%):</label><input class="campo" data-campo="Taxa de Transação (%)" data-plataforma="MAGALU" type="number"/><label>Taxa de Transferência (%):</label><input class="campo" data-campo="Taxa de Transferência (%)" data-plataforma="MAGALU" type="number"/><label>Taxa de Antecipação (%):</label><input class="campo" data-campo="Taxa de Antecipação (%)" data-plataforma="MAGALU" type="number"/><label>Custos Variáveis (R$):</label><input class="campo" data-campo="Custos Variáveis (R$)" data-plataforma="MAGALU" type="number"/><label>Imposto (%):</label><input class="campo" data-campo="Imposto (%)" data-plataforma="MAGALU" type="number"/><label>Comissão do Vendedor (%):</label><input class="campo" data-campo="Comissão do Vendedor (%)" data-plataforma="MAGALU" type="number"/><label><strong>Preço Mínimo (R$):</strong></label><input id="preco-MAGALU" readonly="" type="text"/></div><div class="section"><h3>SHEIN</h3><label>Taxas da Plataforma (%):</label><input class="campo" data-campo="Taxas da Plataforma (%)" data-plataforma="SHEIN" type="number"/><label>Custo Fixo Plataforma (R$):</label><input class="campo" data-campo="Custo Fixo Plataforma (R$)" data-plataforma="SHEIN" type="number"/><label>Frete (R$):</label><input class="campo" data-campo="Frete (R$)" data-plataforma="SHEIN" type="number"/><label>Taxa de Transação (%):</label><input class="campo" data-campo="Taxa de Transação (%)" data-plataforma="SHEIN" type="number"/><label>Taxa de Transferência (%):</label><input class="campo" data-campo="Taxa de Transferência (%)" data-plataforma="SHEIN" type="number"/><label>Taxa de Antecipação (%):</label><input class="campo" data-campo="Taxa de Antecipação (%)" data-plataforma="SHEIN" type="number"/><label>Custos Variáveis (R$):</label><input class="campo" data-campo="Custos Variáveis (R$)" data-plataforma="SHEIN" type="number"/><label>Imposto (%):</label><input class="campo" data-campo="Imposto (%)" data-plataforma="SHEIN" type="number"/><label>Comissão do Vendedor (%):</label><input class="campo" data-campo="Comissão do Vendedor (%)" data-plataforma="SHEIN" type="number"/><label><strong>Preço Mínimo (R$):</strong></label><input id="preco-SHEIN" readonly="" type="text"/></div>
+<!-- FIM -->
+</div>
+<button class="green-btn" onclick="calcularERegistrar()">CALCULAR E REGISTRAR</button>
+</div>
+<div class="tab-content" id="registros">
+<h2>Registros</h2>
+<div style="margin-top: 20px;">
+<button class="green-btn" onclick="alternarVisualizacao()">🔁 Alternar visualização (Lista / Cards)</button>
+</div>
+<label>Filtrar por Plataforma:</label>
+<select id="filtroPlataforma" onchange="filtrarRegistros()">
+<option value="">Todas</option>
+<option value="Mercado Livre">Mercado Livre</option>
+<option value="Shopee">Shopee</option>
+<option value="MAGALU">MAGALU</option>
+<option value="SHEIN">SHEIN</option>
+</select>
+<table id="tabelaRegistros">
+<thead>
+<tr>
+<th>Data</th>
+<th>Produto</th>
+<th>Plataforma</th>
+<th>Preço Mínimo (R$)</th>
+</tr>
+</thead>
+<tbody></tbody>
+</table>
+<div style="margin: 10px 0;">
+<button class="green-btn" onclick="exportarCardsParaPDF()">📄 Exportar Cards como PDF</button>
+</div>
+<div id="cardsResultados" style="display:none; margin-top:20px;"></div><div style="margin-top: 10px;">
+<button class="green-btn" onclick="exportarExcel()">📥 Exportar para Excel</button>
+<button class="green-btn" onclick="exportarPDF()">📄 Exportar para PDF</button>
+</div>
+</div>
+<script>
+const plataformas = ["Mercado Livre", "Shopee", "MAGALU", "SHEIN"];
+window.detalhesRegistros = [];
+
+document.querySelectorAll('.tab-button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(btn.dataset.tab).classList.add('active');
+  });
+});
+
+function calcularERegistrar() {
+  const produto = document.getElementById('produto').value.trim();
+  const custoBase = parseFloat(document.getElementById('custo').value) || 0;
+  const registros = [];
+
+  plataformas.forEach(plataforma => {
+    let campos = document.querySelectorAll(`.campo[data-plataforma="${plataforma}"]`);
+    let totalPercentual = 0;
+    let totalFixo = 0;
+    let dados = {};
+
+    campos.forEach(campo => {
+      const label = campo.dataset.campo;
+      const valor = parseFloat(campo.value) || 0;
+      dados[label] = valor;
+      if (label.includes('(%)')) totalPercentual += valor;
+      else totalFixo += valor;
+    });
+
+    const precoMinimo = (custoBase + totalFixo) / (1 - totalPercentual / 100);
+    document.getElementById(`preco-${plataforma}`).value = precoMinimo.toFixed(2);
+
+    registros.push({
+      data: new Date().toLocaleString(),
+      produto,
+      plataforma,
+      preco: precoMinimo.toFixed(2)
+    });
+
+    if (!window.detalhesRegistros[produto]) {
+      window.detalhesRegistros[produto] = { produto, detalhes: {} };
+    }
+    window.detalhesRegistros[produto].detalhes[plataforma] = dados;
+
+    const tbody = document.querySelector('#tabelaRegistros tbody');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${new Date().toLocaleString()}</td>
+      <td>${produto}</td>
+      <td>${plataforma}</td>
+      <td>${precoMinimo.toFixed(2)}</td>
+      <td><button class="btn-ver-detalhes" data-produto="${produto}">Ver Detalhes</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function filtrarRegistros() {
+  const filtro = document.getElementById("filtroPlataforma").value;
+  const linhas = document.querySelectorAll("#tabelaRegistros tbody tr");
+  linhas.forEach(tr => {
+    const plataforma = tr.children[2].textContent;
+    tr.style.display = (!filtro || plataforma === filtro) ? "" : "none";
+  });
+}
+
+document.addEventListener("click", function(e) {
+  if (e.target.classList.contains("btn-ver-detalhes")) {
+    const produto = e.target.dataset.produto;
+    const dados = window.detalhesRegistros?.[produto];
+    if (!dados) return;
+
+    let msg = `📦 Produto: ${dados.produto}\n\n`;
+    plataformas.forEach(plataforma => {
+      msg += `📍 ${plataforma}\n`;
+      const detalhes = dados.detalhes[plataforma] || {};
+      Object.keys(detalhes).forEach(campo => {
+        msg += `- ${campo}: ${detalhes[campo]}\n`;
+      });
+      msg += `\n`;
+    });
+
+    alert(msg);
+  }
+}
+
+)
+
+function exportarExcel() {
+  const table = document.getElementById("tabelaRegistros");
+  let wb = XLSX.utils.table_to_book(table, {sheet:"Registros"});
+  XLSX.writeFile(wb, "registros_precificacao.xlsx");
+}
+
+function exportarPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  const table = document.getElementById("tabelaRegistros");
+  const rows = [...table.querySelectorAll("tbody tr")].map(tr =>
+    [...tr.children].slice(0, 4).map(td => td.innerText)
+  );
+  const headers = [...table.querySelectorAll("thead th")].slice(0, 4).map(th => th.innerText);
+
+  doc.autoTable({
+    head: [headers],
+    body: rows
+  });
+
+  doc.save("registros_precificacao.pdf");
+}
+</script><script>
+function renderizarCards() {
+  const cards = document.getElementById("cardsResultados");
+  cards.innerHTML = "";
+  const produtos = Object.values(window.detalhesRegistros || {});
+  const campos = [
+    "Preço Mínimo (R$)", "Taxas da Plataforma (%)", "Custo Fixo Plataforma (R$)", "Frete (R$)",
+    "Taxa de Transação (%)", "Taxa de Transferência (%)", "Taxa de Antecipação (%)",
+    "Custos Variáveis (R$)", "Imposto (%)", "Comissão do Vendedor (%)", "CUSTO R$"
+  ];
+  const plataformas = ["Mercado Livre", "Shopee", "MAGALU", "SHEIN"];
+
+  produtos.forEach(prod => {
+    const div = document.createElement("div");
+    div.className = "card-resumo";
+    div.innerHTML = `<h3>📦 ${prod.produto}</h3>
+      <table class="tabela-card">
+        <thead>
+          <tr>
+            <th>Coluna</th>
+            <th>Mercado Livre</th>
+            <th>Shopee</th>
+            <th>Magalu</th>
+            <th>Shein</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${campos.map(label => {
+            const linha = plataformas.map(pf => {
+              const dados = prod.detalhes?.[pf] || {};
+              const preco = parseFloat(document.getElementById("preco-" + pf)?.value || "0");
+              const custo = parseFloat(document.getElementById("custo")?.value || "0");
+              const sobra = preco - custo;
+
+              if (label === "Preço Mínimo (R$)") {
+                return `<td>R$ ${preco.toFixed(2)}</td>`;
+              }
+              if (label === "CUSTO R$") {
+                return `<td>R$ ${custo.toFixed(2)}</td>`;
+              }
+
+              let valor = dados[label];
+              if (label.includes("(%)")) {
+                const percentual = parseFloat(valor || 0);
+                const valorRS = percentual * sobra / 100;
+                return `<td>R$ ${valorRS.toFixed(2)}</td>`;
+              } else {
+                const fixo = parseFloat(valor || 0);
+                return `<td>R$ ${fixo.toFixed(2)}</td>`;
+              }
+            }).join("");
+            return `<tr><td>${label}</td>${linha}</tr>`;
+          }).join("")}
+        </tbody>
+      </table>`;
+    cards.appendChild(div);
+  });
+}
+</script><script>
+function alternarVisualizacao() {
+  const tabela = document.getElementById("tabelaRegistros");
+  const cards = document.getElementById("cardsResultados");
+  if (tabela.style.display === "none") {
+    tabela.style.display = "";
+    cards.style.display = "none";
+  } else {
+    tabela.style.display = "none";
+    cards.style.display = "";
+    renderizarCards();
+  }
+}
+</script><script>
+function exportarCardsParaPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF("l", "pt", "a4");
+
+  const cards = document.querySelectorAll(".card-resumo");
+  let y = 20;
+
+  cards.forEach((card, index) => {
+    const title = card.querySelector("h3")?.innerText || "Produto";
+    doc.setFontSize(14);
+    doc.text(title, 40, y);
+    y += 10;
+
+    const table = card.querySelector("table");
+    const rows = [...table.querySelectorAll("tbody tr")].map(tr =>
+      [...tr.children].map(td => td.innerText)
+    );
+    const headers = [...table.querySelectorAll("thead th")].map(th => th.innerText);
+
+    doc.autoTable({
+      head: [headers],
+      body: rows,
+      startY: y,
+      theme: 'grid',
+      styles: { fontSize: 8, cellPadding: 3 },
+      margin: { left: 40, right: 40 }
+    });
+
+    y = doc.lastAutoTable.finalY + 30;
+    if (index < cards.length - 1 && y > 450) {
+      doc.addPage();
+      y = 20;
+    }
+  });
+
+  doc.save("cards_precificacao.pdf");
+}
+</script><script type="module">
+
+import { db } from './firebase-init.js';
+import { collection, addDoc } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
+
+
+document.querySelectorAll('.tab-button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(btn.dataset.tab).classList.add('active');
+  });
+});
+
+window.detalhesRegistros = [];
+const plataformas = ["Mercado Livre", "Shopee", "MAGALU", "SHEIN"];
+
+window.calcularERegistrar = async function calcularERegistrar() {
+  const produto = document.getElementById('produto').value.trim();
+  const custoBase = parseFloat(document.getElementById('custo').value) || 0;
+  const registros = [];
+
+  for (let plataforma of plataformas) {
+    let campos = document.querySelectorAll(`.campo[data-plataforma="${plataforma}"]`);
+    let totalPercentual = 0;
+    let totalFixo = 0;
+    let dados = {};
+
+    campos.forEach(campo => {
+      const label = campo.dataset.campo;
+      const valor = parseFloat(campo.value) || 0;
+      dados[label] = valor;
+      if (label.includes('(%)')) totalPercentual += valor;
+      else totalFixo += valor;
+    });
+
+    const precoMinimo = (custoBase + totalFixo) / (1 - totalPercentual / 100);
+    document.getElementById(`preco-${plataforma}`).value = precoMinimo.toFixed(2);
+
+    registros.push({
+      data: new Date().toLocaleString(),
+      produto,
+      plataforma,
+      preco: precoMinimo.toFixed(2)
+    });
+
+    if (!window.detalhesRegistros[produto]) {
+      window.detalhesRegistros[produto] = { produto, detalhes: {} };
+    }
+    window.detalhesRegistros[produto].detalhes[plataforma] = dados;
+
+    const tbody = document.querySelector('#tabelaRegistros tbody');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${new Date().toLocaleString()}</td>
+      <td>${produto}</td>
+      <td>${plataforma}</td>
+      <td>${precoMinimo.toFixed(2)}</td>
+      <td><button class="btn-ver-detalhes" data-produto="${produto}">Ver Detalhes</button></td>
+    `;
+    tbody.appendChild(tr);
+
+    // 🔥 Salvar no Firestore
+    await addDoc(collection(db, "precificacao"), {
+      produto,
+      plataforma,
+      preco: precoMinimo.toFixed(2),
+      data: new Date().toISOString(),
+      campos: dados
+    });
+  }
+}
+</script></body>
+</html>
