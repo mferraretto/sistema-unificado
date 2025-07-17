@@ -91,10 +91,11 @@
 <table id="tabelaRegistros">
 <thead>
 <tr>
-<th>Data</th>
-<th>Produto</th>
-<th>Plataforma</th>
-<th>Preço Mínimo (R$)</th>
+  <th>Data</th>
+  <th>Produto</th>
+  <th>Plataforma</th>
+  <th>Preço Mínimo (R$)</th>
+  <th>Ações</th> <!-- ✅ Coluna adicionada -->
 </tr>
 </thead>
 <tbody></tbody>
@@ -118,7 +119,11 @@ window.detalhesRegistros = {};
 
 document.querySelectorAll('.tab-button').forEach(btn => {
   btn.addEventListener('click', () => {
+    // Remove .active de todos os botões e conteúdos
     document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+    // Ativa o botão clicado e sua respectiva aba
     btn.classList.add('active');
     document.getElementById(btn.dataset.tab).classList.add('active');
   });
