@@ -359,11 +359,12 @@ function exportarCardsParaPDF() {
   doc.save("cards_precificacao.pdf");
 }
 </script>
-    <script type="module">
-
+ <script type="module">
 import { db } from './firebase-init.js';
-import { collection, addDoc } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
+import { collection, addDoc, getDocs } from 'https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js';
 
+const plataformas = ["Mercado Livre", "Shopee", "MAGALU", "SHEIN"];
+window.detalhesRegistros = {};
 
 document.querySelectorAll('.tab-button').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -374,13 +375,49 @@ document.querySelectorAll('.tab-button').forEach(btn => {
   });
 });
 
-window.detalhesRegistros = [];
-const plataformas = ["Mercado Livre", "Shopee", "MAGALU", "SHEIN"];
+window.onload = async () => {
+  await carregarPrecificacoes();
+};
+
+async function carregarPrecificacoes() {
+  const tbody = document.querySelector('#tabelaRegistros tbody');
+  tbody.innerHTML = '';
+
+  try {
+    const snap = await getDocs(collection(db, "precificacao"));
+    window.detalhesRegistros = {};
+
+    snap.forEach(doc => {
+      const data = doc.data();
+      const campos = data.campos || {};
+      const dataFormatada = new Date(data.data).toLocaleString('pt-BR');
+      const preco = parseFloat(data.preco || 0).toFixed(2);
+      const produto = data.produto || '';
+      const plataforma = data.plataforma || '';
+
+      const tr = `<tr>
+        <td>${dataFormatada}</td>
+        <td>${produto}</td>
+        <td>${plataforma}</td>
+        <td>${preco}</td>
+        <td><button class="btn-ver-detalhes" data-produto="${produto}">Ver Detalhes</button></td>
+      </tr>`;
+      tbody.insertAdjacentHTML('beforeend', tr);
+
+      if (!window.detalhesRegistros[produto]) {
+        window.detalhesRegistros[produto] = { produto, detalhes: {} };
+      }
+      window.detalhesRegistros[produto].detalhes[plataforma] = campos;
+    });
+  } catch (error) {
+    console.error("Erro ao carregar dados do Firebase:", error);
+  }
+}
 
 window.calcularERegistrar = async function calcularERegistrar() {
   const produto = document.getElementById('produto').value.trim();
   const custoBase = parseFloat(document.getElementById('custo').value) || 0;
-  const registros = [];
+  const tbody = document.querySelector('#tabelaRegistros tbody');
 
   for (let plataforma of plataformas) {
     let campos = document.querySelectorAll(`.campo[data-plataforma="${plataforma}"]`);
@@ -397,91 +434,60 @@ window.calcularERegistrar = async function calcularERegistrar() {
     });
 
     const precoMinimo = (custoBase + totalFixo) / (1 - totalPercentual / 100);
-    document.getElementById(`preco-${plataforma}`).value = precoMinimo.toFixed(2);
+    const precoFinal = precoMinimo.toFixed(2);
+    document.getElementById(`preco-${plataforma}`).value = precoFinal;
 
-    registros.push({
-      data: new Date().toLocaleString(),
+    const registro = {
+      data: new Date().toISOString(),
       produto,
       plataforma,
-      preco: precoMinimo.toFixed(2)
-    });
+      preco: precoFinal,
+      campos: dados
+    };
+
+    await addDoc(collection(db, "precificacao"), registro);
 
     if (!window.detalhesRegistros[produto]) {
       window.detalhesRegistros[produto] = { produto, detalhes: {} };
     }
     window.detalhesRegistros[produto].detalhes[plataforma] = dados;
 
-    const tbody = document.querySelector('#tabelaRegistros tbody');
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${new Date().toLocaleString()}</td>
       <td>${produto}</td>
       <td>${plataforma}</td>
-      <td>${precoMinimo.toFixed(2)}</td>
+      <td>${precoFinal}</td>
       <td><button class="btn-ver-detalhes" data-produto="${produto}">Ver Detalhes</button></td>
     `;
     tbody.appendChild(tr);
-
-    // 🔥 Salvar no Firestore
-    await addDoc(collection(db, "precificacao"), {
-      produto,
-      plataforma,
-      preco: precoMinimo.toFixed(2),
-      data: new Date().toISOString(),
-      campos: dados
-    });
   }
-}
-</script>
-<script type="module">
-  import { db } from './firebase-init (6).js';
-  import { collection, getDocs } from 'https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js';
+};
 
-  window.onload = async () => {
-    await carregarPrecificacoes();
-  };
+document.addEventListener("click", function (e) {
+  if (e.target.classList.contains("btn-ver-detalhes")) {
+    const produto = e.target.dataset.produto;
+    const dados = window.detalhesRegistros?.[produto];
+    if (!dados) return;
 
-  async function carregarPrecificacoes() {
-    const tbody = document.querySelector('#tabelaRegistros tbody');
-    tbody.innerHTML = '';
-
-    try {
-      const snap = await getDocs(collection(db, "precificacao"));
-      window.detalhesRegistros = {}; // Inicializa corretamente
-
-      snap.forEach(doc => {
-        const data = doc.data();
-        const campos = data.campos || {};
-        const dataFormatada = new Date(data.data).toLocaleString('pt-BR');
-        const preco = parseFloat(data.preco || 0).toFixed(2);
-        const produto = data.produto || '';
-        const plataforma = data.plataforma || '';
-
-        const btn = `<button class="btn-ver-detalhes" data-produto="${produto}">Ver Detalhes</button>`;
-        const tr = `<tr>
-          <td>${dataFormatada}</td>
-          <td>${produto}</td>
-          <td>${plataforma}</td>
-          <td>${preco}</td>
-          <td>${btn}</td>
-        </tr>`;
-        tbody.insertAdjacentHTML('beforeend', tr);
-
-        // Prepara estrutura de detalhes
-        if (!window.detalhesRegistros[produto]) {
-          window.detalhesRegistros[produto] = { produto, detalhes: {} };
-        }
-        window.detalhesRegistros[produto].detalhes[plataforma] = campos;
+    let msg = `📦 Produto: ${dados.produto}\n\n`;
+    plataformas.forEach(plataforma => {
+      msg += `📍 ${plataforma}\n`;
+      const detalhes = dados.detalhes[plataforma] || {};
+      Object.keys(detalhes).forEach(campo => {
+        msg += `- ${campo}: ${detalhes[campo]}\n`;
       });
+      msg += `\n`;
+    });
 
-    } catch (error) {
-      console.error("Erro ao carregar dados do Firebase:", error);
-    }
+    alert(msg);
   }
+});
 </script>
 
 
-</script>
+
+
 
 </body>
 </html>
