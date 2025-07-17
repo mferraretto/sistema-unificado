@@ -129,7 +129,7 @@ document.querySelectorAll('.tab-button').forEach(btn => {
   });
 });
 
-function filtrarRegistros() {
+window.filtrarRegistros = function filtrarRegistros() {
   const filtro = document.getElementById("filtroPlataforma").value;
   const linhas = document.querySelectorAll("#tabelaRegistros tbody tr");
   linhas.forEach(tr => {
@@ -156,17 +156,15 @@ document.addEventListener("click", function(e) {
 
     alert(msg);
   }
-}
+});
 
-)
-
-function exportarExcel() {
+window.exportarExcel = function exportarExcel() {
   const table = document.getElementById("tabelaRegistros");
   let wb = XLSX.utils.table_to_book(table, {sheet:"Registros"});
   XLSX.writeFile(wb, "registros_precificacao.xlsx");
 }
 
-function exportarPDF() {
+window.exportarPDF = function exportarPDF() {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
   const table = document.getElementById("tabelaRegistros");
@@ -245,7 +243,7 @@ function renderizarCards() {
     cards.appendChild(div);
   });
 }
-function alternarVisualizacao() {
+window.alternarVisualizacao = function alternarVisualizacao() {
   const tabela = document.getElementById("tabelaRegistros");
   const cards = document.getElementById("cardsResultados");
   if (tabela.style.display === "none") {
@@ -257,7 +255,7 @@ function alternarVisualizacao() {
     renderizarCards();
   }
 }
-function exportarCardsParaPDF() {
+window.exportarCardsParaPDF = function exportarCardsParaPDF() {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF("l", "pt", "a4");
 
