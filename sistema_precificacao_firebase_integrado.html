@@ -472,6 +472,47 @@ async function carregarRegistrosFirebase() {
 }
 
 window.addEventListener('DOMContentLoaded', carregarRegistrosFirebase);
+    <script type="module">
+  import { db } from './firebase-init.js';
+  import { collection, getDocs } from 'https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-lite.js';
+
+  window.onload = async () => {
+    await carregarPrecificacoes();
+  }
+
+  async function carregarPrecificacoes() {
+    const tbody = document.querySelector('#tabelaRegistros tbody');
+    tbody.innerHTML = '';
+
+    const snap = await getDocs(collection(db, "precificacao"));
+    snap.forEach(doc => {
+      const data = doc.data();
+      const campos = data.campos || {};
+      const dataFormatada = new Date(data.data).toLocaleString('pt-BR');
+      const preco = parseFloat(data.preco || 0).toFixed(2);
+      const produto = data.produto || '';
+      const plataforma = data.plataforma || '';
+
+      const btn = `<button class="btn-ver-detalhes" data-produto="${produto}">Ver Detalhes</button>`;
+      const tr = `<tr>
+        <td>${dataFormatada}</td>
+        <td>${produto}</td>
+        <td>${plataforma}</td>
+        <td>${preco}</td>
+        <td>${btn}</td>
+      </tr>`;
+      tbody.insertAdjacentHTML('beforeend', tr);
+
+      // Prepara estrutura de detalhes
+      if (!window.detalhesRegistros) window.detalhesRegistros = {};
+      if (!window.detalhesRegistros[produto]) {
+        window.detalhesRegistros[produto] = { produto, detalhes: {} };
+      }
+      window.detalhesRegistros[produto].detalhes[plataforma] = campos;
+    });
+  }
+</script>
+
 </script>
 
 </body>
