@@ -120,13 +120,15 @@ document.querySelectorAll('.tab-button').forEach(btn => {
   });
 });
 
-function calcularERegistrar() {
+async function calcularERegistrar() {
   const produto = document.getElementById('produto').value.trim();
   const custoBase = parseFloat(document.getElementById('custo').value) || 0;
   const registros = [];
+  const userId = localStorage.getItem('userName') || 'anonimo';
+  const tbody = document.querySelector('#tabelaRegistros tbody');
 
-  plataformas.forEach(plataforma => {
-    let campos = document.querySelectorAll(`.campo[data-plataforma="${plataforma}"]`);
+  for (const plataforma of plataformas) {
+    const campos = document.querySelectorAll(`.campo[data-plataforma="${plataforma}"]`);
     let totalPercentual = 0;
     let totalFixo = 0;
     let dados = {};
@@ -135,36 +137,53 @@ function calcularERegistrar() {
       const label = campo.dataset.campo;
       const valor = parseFloat(campo.value) || 0;
       dados[label] = valor;
+
       if (label.includes('(%)')) totalPercentual += valor;
       else totalFixo += valor;
     });
 
     const precoMinimo = (custoBase + totalFixo) / (1 - totalPercentual / 100);
-    document.getElementById(`preco-${plataforma}`).value = precoMinimo.toFixed(2);
+    const precoFinal = precoMinimo.toFixed(2);
+    document.getElementById(`preco-${plataforma}`).value = precoFinal;
 
-    registros.push({
-      data: new Date().toLocaleString(),
+    const dataAtual = new Date().toISOString();
+
+    const registro = {
+      data: dataAtual,
       produto,
       plataforma,
-      preco: precoMinimo.toFixed(2)
-    });
+      preco: precoFinal,
+      ...dados
+    };
 
-    if (!window.detalhesRegistros[produto]) {
-      window.detalhesRegistros[produto] = { produto, detalhes: {} };
+    registros.push(registro);
+
+    // 🔥 Salvar no Firebase (estrutura direta – OPÇÃO 2)
+    try {
+      const docRef = await db.collection("precificacao").doc(userId).collection("registros").doc();
+      await docRef.set(registro);
+      console.log("✅ Registro salvo no Firebase:", registro);
+    } catch (erro) {
+      console.error("❌ Erro ao salvar no Firebase:", erro);
     }
-    window.detalhesRegistros[produto].detalhes[plataforma] = dados;
 
-    const tbody = document.querySelector('#tabelaRegistros tbody');
+    // Inserir na tabela visual
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${new Date().toLocaleString()}</td>
       <td>${produto}</td>
       <td>${plataforma}</td>
-      <td>${precoMinimo.toFixed(2)}</td>
+      <td>${precoFinal}</td>
       <td><button class="btn-ver-detalhes" data-produto="${produto}">Ver Detalhes</button></td>
     `;
     tbody.appendChild(tr);
-  });
+
+    // Salvar para visualização local
+    if (!window.detalhesRegistros[produto]) {
+      window.detalhesRegistros[produto] = { produto, detalhes: {} };
+    }
+    window.detalhesRegistros[produto].detalhes[plataforma] = dados;
+  }
 }
 
 function filtrarRegistros() {
