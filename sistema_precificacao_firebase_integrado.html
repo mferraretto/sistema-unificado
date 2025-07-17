@@ -129,6 +129,7 @@ async function calcularERegistrar() {
   const registros = [];
   const userId = localStorage.getItem('userName') || 'anonimo';
   const tbody = document.querySelector('#tabelaRegistros tbody');
+  const dataAtual = new Date().toISOString().split("T")[0];
 
   for (const plataforma of plataformas) {
     const campos = document.querySelectorAll(`.campo[data-plataforma="${plataforma}"]`);
@@ -149,31 +150,36 @@ async function calcularERegistrar() {
     const precoFinal = precoMinimo.toFixed(2);
     document.getElementById(`preco-${plataforma}`).value = precoFinal;
 
-    const dataAtual = new Date().toISOString();
-
     const registro = {
       data: dataAtual,
       produto,
       plataforma,
       preco: precoFinal,
-      campos: dados // os campos ficam agrupados aqui
+      campos: dados
     };
 
     registros.push(registro);
 
-    // 🔥 Firebase Modular - OPÇÃO 2 correta
+    // 🔥 Firebase
     try {
-      const ref = doc(collection(db, "precificacao")); // vai gerar ID automático
+      const ref = doc(collection(db, "precificacao"));
       await setDoc(ref, registro);
-      console.log("✅ Registro salvo no Firebase:", registro);
+      console.log("✅ Registro salvo:", registro);
     } catch (erro) {
-      console.error("❌ Erro ao salvar no Firebase:", erro);
+      console.error("❌ Firebase error:", erro);
     }
+
+    // Registrar em memória local
+    if (!window.detalhesRegistros) window.detalhesRegistros = {};
+    if (!window.detalhesRegistros[produto]) {
+      window.detalhesRegistros[produto] = { produto, detalhes: {} };
+    }
+    window.detalhesRegistros[produto].detalhes[plataforma] = dados;
 
     // Inserir na tabela visual
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td>${new Date().toLocaleString()}</td>
+      <td>${dataAtual}</td>
       <td>${produto}</td>
       <td>${plataforma}</td>
       <td>${precoFinal}</td>
@@ -182,12 +188,6 @@ async function calcularERegistrar() {
     tbody.appendChild(tr);
   }
 }
-
-  if (!window.detalhesRegistros) window.detalhesRegistros = {};
-if (!window.detalhesRegistros[produto]) {
-  window.detalhesRegistros[produto] = { produto, detalhes: {} };
-}
-window.detalhesRegistros[produto].detalhes[plataforma] = dados;
 
 function filtrarRegistros() {
   const filtro = document.getElementById("filtroPlataforma").value;
@@ -242,22 +242,27 @@ function exportarPDF() {
 
   doc.save("registros_precificacao.pdf");
 }
-</script><script>
+</script>
+    <script>
 function renderizarCards() {
   const cards = document.getElementById("cardsResultados");
   cards.innerHTML = "";
   const produtos = Object.values(window.detalhesRegistros || {});
+
   const campos = [
     "Preço Mínimo (R$)", "Taxas da Plataforma (%)", "Custo Fixo Plataforma (R$)", "Frete (R$)",
     "Taxa de Transação (%)", "Taxa de Transferência (%)", "Taxa de Antecipação (%)",
     "Custos Variáveis (R$)", "Imposto (%)", "Comissão do Vendedor (%)", "CUSTO R$"
   ];
+
   const plataformas = ["Mercado Livre", "Shopee", "MAGALU", "SHEIN"];
 
   produtos.forEach(prod => {
     const div = document.createElement("div");
     div.className = "card-resumo";
-    div.innerHTML = `<h3>📦 ${prod.produto}</h3>
+
+    div.innerHTML = `
+      <h3>📦 ${prod.produto}</h3>
       <table class="tabela-card">
         <thead>
           <tr>
@@ -272,8 +277,8 @@ function renderizarCards() {
           ${campos.map(label => {
             const linha = plataformas.map(pf => {
               const dados = prod.detalhes?.[pf] || {};
-              const preco = parseFloat(document.getElementById("preco-" + pf)?.value || "0");
-              const custo = parseFloat(document.getElementById("custo")?.value || "0");
+              const preco = parseFloat(dados["Preço Mínimo (R$)"] || "0");
+              const custo = parseFloat(prod.detalhes[pf]["CUSTO R$"] || "0");
               const sobra = preco - custo;
 
               if (label === "Preço Mínimo (R$)") {
@@ -283,13 +288,13 @@ function renderizarCards() {
                 return `<td>R$ ${custo.toFixed(2)}</td>`;
               }
 
-              let valor = dados[label];
+              let valor = dados[label] || 0;
               if (label.includes("(%)")) {
-                const percentual = parseFloat(valor || 0);
+                const percentual = parseFloat(valor);
                 const valorRS = percentual * sobra / 100;
                 return `<td>R$ ${valorRS.toFixed(2)}</td>`;
               } else {
-                const fixo = parseFloat(valor || 0);
+                const fixo = parseFloat(valor);
                 return `<td>R$ ${fixo.toFixed(2)}</td>`;
               }
             }).join("");
@@ -297,10 +302,12 @@ function renderizarCards() {
           }).join("")}
         </tbody>
       </table>`;
+
     cards.appendChild(div);
   });
 }
-</script><script>
+        <script>
+<script>
 function alternarVisualizacao() {
   const tabela = document.getElementById("tabelaRegistros");
   const cards = document.getElementById("cardsResultados");
@@ -351,7 +358,8 @@ function exportarCardsParaPDF() {
 
   doc.save("cards_precificacao.pdf");
 }
-</script><script type="module">
+</script>
+    <script type="module">
 
 import { db } from './firebase-init.js';
 import { collection, addDoc } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
