@@ -107,7 +107,12 @@
 <button class="green-btn" onclick="exportarPDF()">📄 Exportar para PDF</button>
 </div>
 </div>
-<script>
+
+  <script type="module">
+import { db } from './firebase-init.js';
+import { collection, addDoc, doc, setDoc, getDocs } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
+
+
 const plataformas = ["Mercado Livre", "Shopee", "MAGALU", "SHEIN"];
 window.detalhesRegistros = [];
 
@@ -119,75 +124,6 @@ document.querySelectorAll('.tab-button').forEach(btn => {
     document.getElementById(btn.dataset.tab).classList.add('active');
   });
 });
-
-import { collection, addDoc, doc, setDoc } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
-import { db } from './firebase-init.js'; // ou o caminho correto se estiver separado
-
-async function calcularERegistrar() {
-  const produto = document.getElementById('produto').value.trim();
-  const custoBase = parseFloat(document.getElementById('custo').value) || 0;
-  const registros = [];
-  const userId = localStorage.getItem('userName') || 'anonimo';
-  const tbody = document.querySelector('#tabelaRegistros tbody');
-  const dataAtual = new Date().toISOString().split("T")[0];
-
-  for (const plataforma of plataformas) {
-    const campos = document.querySelectorAll(`.campo[data-plataforma="${plataforma}"]`);
-    let totalPercentual = 0;
-    let totalFixo = 0;
-    let dados = {};
-
-    campos.forEach(campo => {
-      const label = campo.dataset.campo;
-      const valor = parseFloat(campo.value) || 0;
-      dados[label] = valor;
-
-      if (label.includes('(%)')) totalPercentual += valor;
-      else totalFixo += valor;
-    });
-
-    const precoMinimo = (custoBase + totalFixo) / (1 - totalPercentual / 100);
-    const precoFinal = precoMinimo.toFixed(2);
-    document.getElementById(`preco-${plataforma}`).value = precoFinal;
-
-    const registro = {
-      data: dataAtual,
-      produto,
-      plataforma,
-      preco: precoFinal,
-      campos: dados
-    };
-
-    registros.push(registro);
-
-    // 🔥 Firebase
-    try {
-      const ref = doc(collection(db, "precificacao"));
-      await setDoc(ref, registro);
-      console.log("✅ Registro salvo:", registro);
-    } catch (erro) {
-      console.error("❌ Firebase error:", erro);
-    }
-
-    // Registrar em memória local
-    if (!window.detalhesRegistros) window.detalhesRegistros = {};
-    if (!window.detalhesRegistros[produto]) {
-      window.detalhesRegistros[produto] = { produto, detalhes: {} };
-    }
-    window.detalhesRegistros[produto].detalhes[plataforma] = dados;
-
-    // Inserir na tabela visual
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${dataAtual}</td>
-      <td>${produto}</td>
-      <td>${plataforma}</td>
-      <td>${precoFinal}</td>
-      <td><button class="btn-ver-detalhes" data-produto="${produto}">Ver Detalhes</button></td>
-    `;
-    tbody.appendChild(tr);
-  }
-}
 
 function filtrarRegistros() {
   const filtro = document.getElementById("filtroPlataforma").value;
@@ -242,8 +178,8 @@ function exportarPDF() {
 
   doc.save("registros_precificacao.pdf");
 }
-</script>
-    <script>
+
+    
 function renderizarCards() {
   const cards = document.getElementById("cardsResultados");
   cards.innerHTML = "";
@@ -306,8 +242,6 @@ function renderizarCards() {
     cards.appendChild(div);
   });
 }
-        <script>
-<script>
 function alternarVisualizacao() {
   const tabela = document.getElementById("tabelaRegistros");
   const cards = document.getElementById("cardsResultados");
@@ -320,7 +254,6 @@ function alternarVisualizacao() {
     renderizarCards();
   }
 }
-</script><script>
 function exportarCardsParaPDF() {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF("l", "pt", "a4");
@@ -358,10 +291,7 @@ function exportarCardsParaPDF() {
 
   doc.save("cards_precificacao.pdf");
 }
-</script>
- <script type="module">
-import { db } from './firebase-init.js';
-import { collection, addDoc, getDocs } from 'https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js';
+
 
 const plataformas = ["Mercado Livre", "Shopee", "MAGALU", "SHEIN"];
 window.detalhesRegistros = {};
@@ -445,7 +375,7 @@ window.calcularERegistrar = async function calcularERegistrar() {
       campos: dados
     };
 
-    await addDoc(collection(db, "precificacao"), registro);
+    await addDoc(collection(db, "precificacao"), registro); // 👈 addDoc permite múltiplos registros
 
     if (!window.detalhesRegistros[produto]) {
       window.detalhesRegistros[produto] = { produto, detalhes: {} };
@@ -463,6 +393,7 @@ window.calcularERegistrar = async function calcularERegistrar() {
     tbody.appendChild(tr);
   }
 };
+
 
 document.addEventListener("click", function (e) {
   if (e.target.classList.contains("btn-ver-detalhes")) {
