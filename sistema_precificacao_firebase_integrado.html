@@ -114,12 +114,11 @@ import { collection, addDoc, doc, setDoc, getDocs } from "https://www.gstatic.co
 
 
 const plataformas = ["Mercado Livre", "Shopee", "MAGALU", "SHEIN"];
-window.detalhesRegistros = [];
+window.detalhesRegistros = {};
 
 document.querySelectorAll('.tab-button').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
     btn.classList.add('active');
     document.getElementById(btn.dataset.tab).classList.add('active');
   });
@@ -191,8 +190,7 @@ function renderizarCards() {
     "Custos Variáveis (R$)", "Imposto (%)", "Comissão do Vendedor (%)", "CUSTO R$"
   ];
 
-  const plataformas = ["Mercado Livre", "Shopee", "MAGALU", "SHEIN"];
-
+ 
   produtos.forEach(prod => {
     const div = document.createElement("div");
     div.className = "card-resumo";
@@ -293,18 +291,6 @@ function exportarCardsParaPDF() {
 }
 
 
-const plataformas = ["Mercado Livre", "Shopee", "MAGALU", "SHEIN"];
-window.detalhesRegistros = {};
-
-document.querySelectorAll('.tab-button').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById(btn.dataset.tab).classList.add('active');
-  });
-});
-
 window.onload = async () => {
   await carregarPrecificacoes();
 };
@@ -395,25 +381,6 @@ window.calcularERegistrar = async function calcularERegistrar() {
 };
 
 
-document.addEventListener("click", function (e) {
-  if (e.target.classList.contains("btn-ver-detalhes")) {
-    const produto = e.target.dataset.produto;
-    const dados = window.detalhesRegistros?.[produto];
-    if (!dados) return;
-
-    let msg = `📦 Produto: ${dados.produto}\n\n`;
-    plataformas.forEach(plataforma => {
-      msg += `📍 ${plataforma}\n`;
-      const detalhes = dados.detalhes[plataforma] || {};
-      Object.keys(detalhes).forEach(campo => {
-        msg += `- ${campo}: ${detalhes[campo]}\n`;
-      });
-      msg += `\n`;
-    });
-
-    alert(msg);
-  }
-});
 </script>
 
 
