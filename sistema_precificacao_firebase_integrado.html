@@ -303,37 +303,45 @@ window.onload = async () => {
 async function carregarPrecificacoes() {
   const tbody = document.querySelector('#tabelaRegistros tbody');
   tbody.innerHTML = '';
+  window.detalhesRegistros = {};
 
   try {
     const snap = await getDocs(collection(db, "precificacao"));
-    window.detalhesRegistros = {};
 
     snap.forEach(doc => {
       const data = doc.data();
       const campos = data.campos || {};
       const dataFormatada = new Date(data.data).toLocaleString('pt-BR');
       const preco = parseFloat(data.preco || 0).toFixed(2);
-      const produto = data.produto || '';
-      const plataforma = data.plataforma || '';
+      const produto = data.produto || 'Sem nome';
+      const plataforma = data.plataforma || 'Desconhecida';
 
+      // Insere linha na tabela
       const tr = `<tr>
         <td>${dataFormatada}</td>
         <td>${produto}</td>
         <td>${plataforma}</td>
-        <td>${preco}</td>
+        <td>R$ ${preco}</td>
         <td><button class="btn-ver-detalhes" data-produto="${produto}">Ver Detalhes</button></td>
       </tr>`;
       tbody.insertAdjacentHTML('beforeend', tr);
 
+      // Organiza os dados no objeto global
       if (!window.detalhesRegistros[produto]) {
         window.detalhesRegistros[produto] = { produto, detalhes: {} };
       }
       window.detalhesRegistros[produto].detalhes[plataforma] = campos;
+      window.detalhesRegistros[produto].detalhes[plataforma]["Preço Mínimo (R$)"] = parseFloat(preco);
+      window.detalhesRegistros[produto].detalhes[plataforma]["CUSTO R$"] = campos["CUSTO R$"] || 0;
     });
   } catch (error) {
     console.error("Erro ao carregar dados do Firebase:", error);
+    const erroMsg = document.createElement("tr");
+    erroMsg.innerHTML = `<td colspan="5">⚠️ Erro ao carregar dados do Firebase</td>`;
+    tbody.appendChild(erroMsg);
   }
 }
+
 
 window.calcularERegistrar = async function calcularERegistrar() {
   const produto = document.getElementById('produto').value.trim();
@@ -341,7 +349,7 @@ window.calcularERegistrar = async function calcularERegistrar() {
   const tbody = document.querySelector('#tabelaRegistros tbody');
 
   for (let plataforma of plataformas) {
-    let campos = document.querySelectorAll(`.campo[data-plataforma="${plataforma}"]`);
+    const campos = document.querySelectorAll(`.campo[data-plataforma="${plataforma}"]`);
     let totalPercentual = 0;
     let totalFixo = 0;
     let dados = {};
@@ -356,6 +364,11 @@ window.calcularERegistrar = async function calcularERegistrar() {
 
     const precoMinimo = (custoBase + totalFixo) / (1 - totalPercentual / 100);
     const precoFinal = precoMinimo.toFixed(2);
+
+    // ✅ Atualiza os campos extras manualmente
+    dados["Preço Mínimo (R$)"] = parseFloat(precoFinal);
+    dados["CUSTO R$"] = parseFloat(custoBase + totalFixo);
+
     document.getElementById(`preco-${plataforma}`).value = precoFinal;
 
     const registro = {
@@ -366,24 +379,27 @@ window.calcularERegistrar = async function calcularERegistrar() {
       campos: dados
     };
 
-    await addDoc(collection(db, "precificacao"), registro); // 👈 addDoc permite múltiplos registros
+    await addDoc(collection(db, "precificacao"), registro);
 
+    // Atualiza os dados no objeto global usado nos cards
     if (!window.detalhesRegistros[produto]) {
       window.detalhesRegistros[produto] = { produto, detalhes: {} };
     }
     window.detalhesRegistros[produto].detalhes[plataforma] = dados;
 
+    // Adiciona na tabela de registros (parte visual)
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${new Date().toLocaleString()}</td>
       <td>${produto}</td>
       <td>${plataforma}</td>
-      <td>${precoFinal}</td>
+      <td>R$ ${precoFinal}</td>
       <td><button class="btn-ver-detalhes" data-produto="${produto}">Ver Detalhes</button></td>
     `;
     tbody.appendChild(tr);
   }
 };
+
 
 // Expõe as funções globais que os botões usam
 window.alternarVisualizacao = alternarVisualizacao;
