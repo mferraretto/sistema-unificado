@@ -402,5 +402,28 @@ window.calcularERegistrar = async function calcularERegistrar() {
     });
   }
 }
-</script></body>
+</script>
+<script type="module">
+import { db } from './firebase-init (4).js';
+import { collection, getDocs } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
+
+async function carregarRegistrosFirebase() {
+  const registrosSnapshot = await getDocs(collection(db, "registros_precificacao"));
+  const registros = [];
+  registrosSnapshot.forEach((doc) => {
+    registros.push(doc.data());
+  });
+  return registros;
+}
+
+window.onload = async () => {
+  const registrosSalvos = await carregarRegistrosFirebase();
+  localStorage.setItem('registrosPrecificacao', JSON.stringify(registrosSalvos));
+  if (typeof renderizarRegistros === "function") {
+    renderizarRegistros(registrosSalvos);
+  }
+};
+</script>
+
+</body>
 </html>
