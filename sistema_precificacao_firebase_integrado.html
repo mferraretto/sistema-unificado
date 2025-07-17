@@ -315,13 +315,17 @@ async function carregarPrecificacoes() {
       const plataforma = data.plataforma || 'Desconhecida';
 
       // Insere linha na tabela
-      const tr = `<tr>
-        <td>${dataFormatada}</td>
-        <td>${produto}</td>
-        <td>${plataforma}</td>
-        <td>R$ ${preco}</td>
-        <td><button class="btn-ver-detalhes" data-produto="${produto}">Ver Detalhes</button></td>
-      </tr>`;
+     const tr = `<tr data-id="${doc.id}">
+  <td>${dataFormatada}</td>
+  <td>${produto}</td>
+  <td>${plataforma}</td>
+  <td>R$ ${preco}</td>
+  <td>
+    <button class="btn-ver-detalhes" data-produto="${produto}">Detalhes</button>
+    <button class="btn-editar" data-id="${doc.id}">Editar</button>
+    <button class="btn-excluir" data-id="${doc.id}">Excluir</button>
+  </td>
+</tr>`;
       tbody.insertAdjacentHTML('beforeend', tr);
 
       // Organiza os dados no objeto global
@@ -404,6 +408,46 @@ window.alternarVisualizacao = alternarVisualizacao;
 window.exportarCardsParaPDF = exportarCardsParaPDF;
 window.exportarExcel = exportarExcel;
 window.exportarPDF = exportarPDF;
+import { deleteDoc, doc as docRef } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
+
+document.addEventListener("click", async function (e) {
+  // EXCLUIR REGISTRO
+  if (e.target.classList.contains("btn-excluir")) {
+    const id = e.target.dataset.id;
+    if (confirm("Tem certeza que deseja excluir este registro?")) {
+      await deleteDoc(docRef(db, "precificacao", id));
+      e.target.closest("tr").remove();
+      alert("Registro excluído com sucesso.");
+    }
+  }
+
+  // EDITAR REGISTRO (preenche o formulário)
+  if (e.target.classList.contains("btn-editar")) {
+    const id = e.target.dataset.id;
+    const row = e.target.closest("tr");
+    const produto = row.children[1].textContent;
+    const plataforma = row.children[2].textContent;
+
+    // Preenche o formulário
+    document.getElementById("produto").value = produto;
+
+    const campos = window.detalhesRegistros[produto]?.detalhes[plataforma] || {};
+
+    // Preenche todos os inputs da plataforma correspondente
+    document.querySelectorAll(`.campo[data-plataforma="${plataforma}"]`).forEach(input => {
+      const campo = input.dataset.campo;
+      input.value = campos[campo] ?? "";
+    });
+
+    // Preenche o custo base estimado (se possível)
+    document.getElementById("custo").value = campos["CUSTO R$"] ?? 0;
+
+    // Muda para a aba de formulário
+    document.querySelector('.tab-button[data-tab="formulario"]').click();
+
+    alert(`Campos carregados para edição do produto "${produto}" na plataforma "${plataforma}". Após editar, clique em "Calcular e Registrar" para salvar como novo.`);
+  }
+});
 
 </script>
 
